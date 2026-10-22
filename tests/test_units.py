@@ -88,6 +88,33 @@ def test_store_profile_and_watches():
         s.close()
 
 
+def test_profile_changes_validate_as_one_atomic_update(monkeypatch, tmp_path):
+    monkeypatch.setenv("TRIP_SCOUT_DB", str(tmp_path / "profile-validation.db"))
+    from trip_scout.server import _validated_profile_changes
+
+    changes = _validated_profile_changes(
+        currency="eur", adults=2, children=0, cabin_class="premium economy",
+        nonstop_only=True, min_hotel_rating=4.5, hotel_stars=[4, 5, 4],
+        trip_budget_eur=1800, interests=["art", "food", "art"], step_free_access=False)
+    assert changes == {
+        "currency": "EUR", "adults": 2, "children": 0, "cabinClass": "premium_economy",
+        "maxStops": 0, "minHotelRating": 4.5, "hotelClasses": [4, 5],
+        "tripBudgetEUR": 1800.0, "interests": ["art", "food"], "stepFreeAccess": False,
+    }
+
+    invalid_updates = [
+        {"home_airport": 0}, {"currency": "USDD"}, {"currency": 123},
+        {"adults": 0}, {"adults": 1.5}, {"children": -1},
+        {"cabin_class": "luxury"}, {"nonstop_only": "yes"},
+        {"min_hotel_rating": 5.1}, {"hotel_stars": [0]}, {"hotel_stars": []},
+        {"trip_budget_eur": float("nan")}, {"trip_budget_eur": float("inf")},
+        {"interests": []}, {"interests": ["nightlife"]}, {"step_free_access": 1},
+    ]
+    for update in invalid_updates:
+        with pytest.raises(ValueError):
+            _validated_profile_changes(**update)
+
+
 def test_fallback_intents():
     from web.app import fallback_intent
     assert fallback_intent("When is it cheapest to fly to Lisbon next month for 4 nights?") == \

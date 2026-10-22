@@ -5,7 +5,9 @@ Env:  TRIP_SCOUT_PORT, TRIP_SCOUT_HOST, TRIP_SCOUT_TOKEN (optional bearer auth),
       TRIP_SCOUT_DB (SQLite path for profiles / price watches)
 """
 import datetime as dt
+import math
 import os
+import re
 
 import anyio
 from mcp.server.fastmcp import Context, FastMCP
@@ -171,6 +173,69 @@ def view() -> str:
 
 
 # ------------------------------------------------------------------ profile (state across sessions)
+def _validated_profile_changes(home_airport=None, currency=None, adults=None, children=None,
+                               cabin_class=None, nonstop_only=None, min_hotel_rating=None,
+                               hotel_stars=None, trip_budget_eur=None, interests=None,
+                               step_free_access=None):
+    """Validate a complete profile update before the caller writes any part of it."""
+    changes = {}
+    if home_airport is not None and home_airport != "":
+        if not isinstance(home_airport, str):
+            raise ValueError("Home airport must be a city, airport name, or IATA code.")
+        changes["homeAirport"] = _place(home_airport, "home")["code"]
+    if currency is not None:
+        if not isinstance(currency, str):
+            raise ValueError("Currency must be a three-letter code, such as EUR or USD.")
+        normalized_currency = currency.upper()
+        if not re.fullmatch(r"[A-Z]{3}", normalized_currency):
+            raise ValueError("Currency must be a three-letter code, such as EUR or USD.")
+        changes["currency"] = normalized_currency
+    if adults is not None:
+        if isinstance(adults, bool) or not isinstance(adults, int) or not 1 <= adults <= 9:
+            raise ValueError("Choose 1–9 adults.")
+        changes["adults"] = adults
+    if children is not None:
+        if isinstance(children, bool) or not isinstance(children, int) or not 0 <= children <= 8:
+            raise ValueError("Choose 0–8 children.")
+        changes["children"] = children
+    if cabin_class is not None:
+        normalized_cabin = str(cabin_class).lower().replace(" ", "_")
+        if normalized_cabin not in {"economy", "premium_economy", "business", "first"}:
+            raise ValueError("Choose economy, premium economy, business, or first class.")
+        changes["cabinClass"] = normalized_cabin
+    if nonstop_only is not None:
+        if not isinstance(nonstop_only, bool):
+            raise ValueError("Nonstop preference must be true or false.")
+        changes["maxStops"] = 0 if nonstop_only else None
+    if min_hotel_rating is not None:
+        if isinstance(min_hotel_rating, bool) or not isinstance(min_hotel_rating, (int, float)) or not math.isfinite(min_hotel_rating) or not 0 <= min_hotel_rating <= 5:
+            raise ValueError("Minimum hotel rating must be between 0 and 5.")
+        changes["minHotelRating"] = float(min_hotel_rating)
+    if hotel_stars is not None:
+        if not isinstance(hotel_stars, list) or not hotel_stars or any(
+                isinstance(star, bool) or not isinstance(star, int) or not 1 <= star <= 5
+                for star in hotel_stars):
+            raise ValueError("Choose one or more hotel star classes from 1 to 5.")
+        changes["hotelClasses"] = list(dict.fromkeys(hotel_stars))
+    if trip_budget_eur is not None:
+        if isinstance(trip_budget_eur, bool) or not isinstance(trip_budget_eur, (int, float)) or not math.isfinite(trip_budget_eur) or not 0 <= trip_budget_eur <= 100000:
+            raise ValueError("Choose a EUR trip budget from 0 to 100,000.")
+        changes["tripBudgetEUR"] = float(trip_budget_eur)
+    if interests is not None:
+        allowed = {"architecture", "art", "food", "history", "outdoors"}
+        if not isinstance(interests, list):
+            raise ValueError("Interests must be a list of supported interests.")
+        normalized = list(dict.fromkeys(str(item).lower() for item in interests))
+        if not normalized or any(item not in allowed for item in normalized):
+            raise ValueError("Choose one or more supported interests: architecture, art, food, history or outdoors.")
+        changes["interests"] = normalized
+    if step_free_access is not None:
+        if not isinstance(step_free_access, bool):
+            raise ValueError("Step-free access preference must be true or false.")
+        changes["stepFreeAccess"] = step_free_access
+    return changes
+
+
 @mcp.tool(title="Save travel preferences", annotations=ToolAnnotations(readOnlyHint=False, idempotentHint=True, openWorldHint=False))
 async def set_travel_profile(ctx: Context, home_airport: str | None = None, currency: str | None = None, adults: int | None = None,
                              children: int | None = None, cabin_class: str | None = None, nonstop_only: bool | None = None,
@@ -179,38 +244,12 @@ async def set_travel_profile(ctx: Context, home_airport: str | None = None, curr
                              step_free_access: bool | None = None) -> CallToolResult:
     """Remember the traveler's home airport and preferences so they never have to repeat them.
     cabin_class: economy | premium_economy | business | first. hotel_stars e.g. [4, 5]."""
-    changes = {}
-    if home_airport:
-        try:
-            changes["homeAirport"] = _place(home_airport, "home")["code"]
-        except ValueError as e:
-            return _error(str(e))
-    if currency:
-        changes["currency"] = currency.upper()[:3]
-    if adults:
-        changes["adults"] = max(1, min(int(adults), 9))
-    if children is not None:
-        changes["children"] = max(0, min(int(children), 8))
-    if cabin_class:
-        changes["cabinClass"] = cabin_class.lower().replace(" ", "_")
-    if nonstop_only is not None:
-        changes["maxStops"] = 0 if nonstop_only else None
-    if min_hotel_rating is not None:
-        changes["minHotelRating"] = float(min_hotel_rating)
-    if hotel_stars is not None:
-        changes["hotelClasses"] = [int(s) for s in hotel_stars]
-    if trip_budget_eur is not None:
-        if trip_budget_eur < 0 or trip_budget_eur > 100000:
-            return _error("Choose a EUR trip budget from 0 to 100,000.")
-        changes["tripBudgetEUR"] = float(trip_budget_eur)
-    if interests is not None:
-        allowed = {"architecture", "art", "food", "history", "outdoors"}
-        normalized = list(dict.fromkeys(str(item).lower() for item in interests))
-        if not normalized or any(item not in allowed for item in normalized):
-            return _error("Choose one or more supported interests: architecture, art, food, history or outdoors.")
-        changes["interests"] = normalized
-    if step_free_access is not None:
-        changes["stepFreeAccess"] = bool(step_free_access)
+    try:
+        changes = _validated_profile_changes(
+            home_airport, currency, adults, children, cabin_class, nonstop_only,
+            min_hotel_rating, hotel_stars, trip_budget_eur, interests, step_free_access)
+    except (TypeError, ValueError) as e:
+        return _error(str(e))
     prof = store.update_profile(_user(ctx), **changes)
     home = places.label(prof["homeAirport"]) if prof["homeAirport"] else "not set"
     speech = f"Got it. Home airport {home}, {prof['adults']} adult{'s' if prof['adults'] > 1 else ''}, {prof['cabinClass'].replace('_', ' ')}" + \

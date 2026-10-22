@@ -308,10 +308,10 @@ The simulator contains an opt-in Amazon Bedrock Chat Completions integration. Th
 Run the focused regression suite:
 
 ```bash
-python -m pytest -q tests/test_units.py tests/test_roamready_mcp.py tests/test_web_reset.py
+python -m pytest -p no:capture -q tests/test_units.py tests/test_roamready_mcp.py tests/test_web_reset.py
 ```
 
-The 22 October 2026 regression run reports **22 passing tests** for the command below. The live Bedrock service was not called; its request construction is tested with a fake HTTP client.
+The 22 October 2026 regression run after profile-input validation reports **23 passing tests** for the command below. In this managed environment, `-p no:capture` is needed because pytest's native readline capture workaround crashes the interpreter. The live Bedrock service was not called; its request construction is tested with a fake HTTP client.
 
 Additional checks reported during the audit:
 
