@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RoamReady AI</title>
+<style>
+  :root { --bg:#0b1220; --card:#131c2e; --line:#23304a; --text:#eef2ff; --muted:#93a1bd; --accent:#35c7ff; --good:#3ddc97; --warn:#ffb547; --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; background:var(--bg); color:var(--text); font-family:var(--font); }
+  .wrap { padding:18px 20px 20px; }
+  h1 { font-size:20px; margin:0 0 4px; font-weight:650; letter-spacing:.2px; }
+  .sub { color:var(--muted); font-size:13px; margin-bottom:14px; }
+  .grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; position:relative; overflow:hidden; }
+  .trip-card { padding-top:38px; }
+  .card.best { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .badge { position:absolute; top:10px; right:10px; font-size:11px; padding:3px 8px; border-radius:99px; background:var(--accent); color:#001421; font-weight:700; }
+  .price { font-size:28px; font-weight:750; }
+  .price small { font-size:13px; color:var(--muted); font-weight:500; }
+  .row { display:flex; justify-content:space-between; gap:8px; font-size:13px; color:var(--muted); margin-top:6px; }
+  .strong { color:var(--text); font-weight:600; }
+  .photo { width:100%; height:110px; object-fit:cover; border-radius:10px; margin-bottom:10px; background:#1b2640; }
+  .btns { display:flex; gap:8px; margin-top:12px; }
+  button { flex:1; background:#1d2a44; color:var(--text); border:1px solid var(--line); border-radius:10px; padding:9px 10px; font-size:13px; cursor:pointer; }
+  button.primary { background:var(--accent); color:#001421; border-color:var(--accent); font-weight:700; }
+  button:disabled { opacity:.6; cursor:default; }
+  .bars { display:flex; align-items:flex-end; gap:6px; height:130px; margin:8px 0 6px; }
+  .bar { flex:1; background:#26406b; border-radius:6px 6px 0 0; position:relative; min-height:6px; }
+  .bar.min { background:var(--good); }
+  .bar span { position:absolute; top:-18px; left:50%; transform:translateX(-50%); font-size:10px; color:var(--muted); white-space:nowrap; }
+  .labels { display:flex; gap:6px; font-size:10px; color:var(--muted); }
+  .labels div { flex:1; text-align:center; }
+  .steps { font-size:12px; color:var(--muted); margin-top:14px; border-top:1px solid var(--line); padding-top:10px; }
+  .steps li { margin:2px 0; }
+  .empty { color:var(--muted); padding:30px 0; text-align:center; }
+  .drop { color:var(--good); font-weight:700; }
+  .up { color:var(--warn); font-weight:700; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="empty">Waiting for RoamReady AI results…</div></div>
+<script>
+// ---------------------------------------------------------------- MCP Apps bridge (SEP-1865), no SDK needed
+let nextId = 1; const pending = {};
+function send(msg) { window.parent.postMessage(msg, "*"); }
+function request(method, params) {
+  const id = nextId++; send({ jsonrpc: "2.0", id, method, params });
+  return new Promise((resolve, reject) => { pending[id] = { resolve, reject }; });
+}
+function notify(method, params) { send({ jsonrpc: "2.0", method, params }); }
+window.addEventListener("message", (ev) => {
+  const m = ev.data || {};
+  if (m.id && pending[m.id] && (m.result !== undefined || m.error)) {
+    const p = pending[m.id]; delete pending[m.id];
+    m.error ? p.reject(new Error(m.error.message || "error")) : p.resolve(m.result); return;
+  }
+  if (m.method === "ui/notifications/tool-result") render(m.params);
+  if (m.method === "ui/notifications/tool-input") showLoading(m.params && m.params.arguments);
+});
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const money = (v, c) => v == null ? "–" : new Intl.NumberFormat("en-US", { style:"currency", currency:c || "USD", maximumFractionDigits:0 }).format(v);
+const hm = (m) => m == null ? "" : `${Math.floor(m/60)}h ${m%60}m`;
+const t = (iso) => { if (!iso) return ""; const d = new Date(iso.length > 10 ? iso : iso + "T00:00"); return d.toLocaleString("en-US", { weekday:"short", hour:"numeric", minute:"2-digit" }); };
+const day = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" });
+const app = document.getElementById("app");
+
+function showLoading(args) { app.innerHTML = `<div class="empty">Searching${args && args.destination ? " for " + esc(args.destination) : ""}…</div>`; }
+
+async function openLink(url) { try { await request("ui/open-link", { url }); } catch (e) { window.open(url, "_blank"); } }
+async function callTool(name, args, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = "Working…"; }
+  try { const r = await request("tools/call", { name, arguments: args }); if (btn) btn.textContent = "✓ Done"; return r; }
+  catch (e) { if (btn) { btn.textContent = "Failed"; btn.disabled = false; } }
+}
+window.TS = { openLink, callTool };
+
+function flightLine(f) {
+  if (!f) return "";
+  const stops = f.stops === 0 ? "Nonstop" : `${f.stops} stop${f.stops > 1 ? "s" : ""}${f.layovers && f.layovers.length ? " via " + f.layovers.join(", ") : ""}`;
+  return `<div class="row"><span class="strong">${esc((f.airlines || []).join(", "))}</span><span>${esc((f.flightNumbers || []).join(" · "))}</span></div>
+          <div class="row"><span>${esc(t(f.departure))} → ${esc(t(f.arrival))}</span></div>
+          <div class="row"><span>${hm(f.durationMinutes)} · ${stops}</span><span>${f.co2Kg ? f.co2Kg + " kg CO₂" : ""}</span></div>`;
+}
+
+function render(result) {
+  const d = (result && result.structuredContent) || {};
+  const cur = d.currency || "USD";
+  const kind = d.kind;
+  let html = `<h1>${esc(d.title || "RoamReady AI")}</h1><div class="sub">${esc(d.subtitle || "")}</div>`;
+
+  if (kind === "packages") {
+    html += `<div class="grid">` + (d.packages || []).map((p, i) => `
+      <div class="card ${i === 0 ? "best" : ""}">${i === 0 ? '<div class="badge">BEST VALUE</div>' : ""}
+        ${p.hotel.photo ? `<img class="photo" src="${esc(p.hotel.photo)}" alt="">` : ""}
+        <div class="price">${money(p.total, cur)} <small>total</small></div>
+        <div class="row"><span class="strong">${day(p.departureDate)} → ${day(p.returnDate)}</span><span>${p.nights} nights</span></div>
+        <div class="row"><span>✈ ${money(p.flightPrice, cur)}</span><span>🏨 ${money(p.hotelPrice, cur)}</span></div>
+        ${flightLine(p.flight)}
+        <div class="row"><span class="strong">${esc(p.hotel.name)}</span><span>★ ${p.hotel.rating ?? "–"} (${p.hotel.reviewCount ?? 0})</span></div>
+        <div class="btns">
+          <button onclick='TS.openLink(${JSON.stringify(p.flightsUrl || "")})'>Flights</button>
+          <button onclick='TS.openLink(${JSON.stringify(p.hotel.googleHotelsUrl || "")})'>Hotel</button>
+          <button class="primary" onclick='TS.callTool("watch_price", ${JSON.stringify({ origin: d.origin, destination: d.destination, departure_date: p.departureDate, return_date: p.returnDate })}, this)'>Watch</button>
+        </div>
+      </div>`).join("") + `</div>`;
+  } else if (kind === "dates") {
+    const rs = (d.results || []).slice().sort((a, b) => a.departureDate.localeCompare(b.departureDate));
+    const max = Math.max(...rs.map(r => r.price || 0), 1), min = Math.min(...rs.map(r => r.price || 1e12));
+    html += `<div class="card"><div class="bars">` + rs.map(r => `<div class="bar ${r.price === min ? "min" : ""}" style="height:${Math.max(6, 100 * (r.price || 0) / max)}%"><span>${money(r.price, cur)}</span></div>`).join("") +
+            `</div><div class="labels">` + rs.map(r => `<div>${day(r.departureDate).replace(",", "")}</div>`).join("") + `</div></div>`;
+    if (d.cheapest) html += `<div class="grid" style="margin-top:12px"><div class="card best"><div class="badge">CHEAPEST DAY</div>
+        <div class="price">${money(d.cheapest.price, cur)}</div><div class="row"><span class="strong">${day(d.cheapest.departureDate)}${d.cheapest.returnDate ? " → " + day(d.cheapest.returnDate) : ""}</span></div>
+        ${flightLine(d.cheapest.flight)}
+        <div class="btns"><button onclick='TS.openLink(${JSON.stringify(d.cheapest.url || "")})'>Open</button>
+        <button class="primary" onclick='TS.callTool("watch_price", ${JSON.stringify({ origin: d.origin, destination: d.destination, departure_date: d.cheapest.departureDate, return_date: d.cheapest.returnDate })}, this)'>Watch</button></div></div></div>`;
+  } else if (kind === "flights") {
+    html += `<div class="grid">` + (d.flights || []).map((f, i) => `<div class="card ${i === 0 ? "best" : ""}">${i === 0 ? '<div class="badge">CHEAPEST</div>' : ""}
+        <div class="price">${money(f.price, cur)}</div>${flightLine(f)}</div>`).join("") + `</div>`;
+    if (d.url) html += `<div class="btns"><button onclick='TS.openLink(${JSON.stringify(d.url)})'>Open in Google Flights</button>
+        <button class="primary" onclick='TS.callTool("watch_price", ${JSON.stringify({ origin: d.origin, destination: d.destination, departure_date: d.departureDate, return_date: d.returnDate })}, this)'>Watch this price</button></div>`;
+  } else if (kind === "hotels") {
+    html += `<div class="grid">` + (d.hotels || []).map((h, i) => `<div class="card ${i === 0 ? "best" : ""}">${i === 0 ? '<div class="badge">TOP PICK</div>' : ""}
+        ${h.photo ? `<img class="photo" src="${esc(h.photo)}" alt="">` : ""}
+        <div class="price">${money(h.pricePerNight, cur)} <small>/ night</small></div>
+        <div class="row"><span class="strong">${esc(h.name)}</span></div>
+        <div class="row"><span>★ ${h.rating ?? "–"} · ${h.reviewCount ?? 0} reviews</span><span>${h.hotelClass ? h.hotelClass + "-star" : ""}</span></div>
+        <div class="row"><span>${esc((h.highlights || []).join(" · "))}</span><span>${money(h.priceTotal, cur)} total</span></div>
+        <div class="btns"><button onclick='TS.openLink(${JSON.stringify(h.googleHotelsUrl || "")})'>Details</button></div></div>`).join("") + `</div>`;
+  } else if (kind === "demo-trip" || kind === "provider-fallback" || kind === "demo-rescue") {
+    const moneyEur = n => `€${Number(n || 0).toLocaleString("en-IE")}`;
+    const renderTrip = (trip, label) => `<section class="card trip-card"><div class="badge">${label}</div>
+      <div class="row"><span class="strong">${trip.days} days · ${trip.travelers} travelers</span><span>Budget ${moneyEur(trip.budget)}</span></div>
+      <div class="grid">${Object.entries(trip.costBreakdown || {}).map(([key, val]) => `<div class="row"><span>${esc(key.replace(/[A-Z]/g, m => " " + m).replace(/^./, c => c.toUpperCase()))}</span><span>${moneyEur(val)}</span></div>`).join("")}</div>
+      <div class="row"><span class="strong">Estimated trip total</span><span class="strong">${moneyEur(trip.estimatedTotal)}</span></div>
+      <div class="row"><span>Budget remaining</span><span>${moneyEur(trip.remainingBudget)}</span></div>
+      <div class="row"><span>Estimated local travel</span><span>${trip.estimatedTravelMinutes} min</span></div>
+      ${(trip.itinerary.days || []).map(dayPlan => `<div class="sub"><b>Day ${dayPlan.day}</b> · ${(dayPlan.stops || []).map(s => `${esc(s.start)} ${esc(s.name)} (${moneyEur(s.cost)})`).join(" · ") || "No remaining stops"}</div>`).join("")}</section>`;
+    if (kind === "demo-rescue") {
+      const dc = d.changes || {};
+      html += `<div class="card"><div class="badge">SIMULATED DISRUPTION</div><div class="strong">${esc(d.disruption)}</div>
+        <div class="row"><span>Estimated total change</span><span>${dc.estimatedCostDelta < 0 ? "−" : "+"}${moneyEur(Math.abs(dc.estimatedCostDelta))}</span></div>
+        <div class="row"><span>Budget remaining change</span><span>${dc.remainingBudgetDelta < 0 ? "−" : "+"}${moneyEur(Math.abs(dc.remainingBudgetDelta))}</span></div>
+        <div class="row"><span>Estimated travel-time change</span><span>${dc.travelMinutesDelta < 0 ? "−" : "+"}${Math.abs(dc.travelMinutesDelta)} min</span></div>
+        <div class="sub">${esc(d.dataLabel || "")}</div></div>`;
+      html += renderTrip(d.before, "BEFORE") + renderTrip(d.after, "AFTER REPLAN");
+    } else {
+      if (kind === "provider-fallback") html += `<div class="card"><div class="badge">SIMULATED PROVIDER FAILURE · RECOVERED OFFLINE</div><div>${esc(d.failure || "Provider unavailable")}</div></div>`;
+      html += renderTrip(d, "SIMULATED TRIP ESTIMATE");
+    }
+    html += `<div class="sub">${esc(d.dataLabel || "All values are illustrative estimates, not live availability or quotes.")}</div>`;
+  } else if (kind === "itinerary" || kind === "rescue") {
+    const itinerary = kind === "rescue" ? (d.itinerary || {}) : d;
+    if (kind === "rescue") html += `<div class="card"><div class="badge">DISRUPTION RESCUE · SIMULATED</div><div class="strong">${esc(d.disruption || "Disruption")}</div><ul class="steps">${(d.changes || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>`;
+    html += `<div class="row"><span>Activity estimate: €${Number(itinerary.estimatedActivityCost || 0).toLocaleString("en-IE")} / €${Number(itinerary.budget || 0).toLocaleString("en-IE")}</span><span>${itinerary.estimatedTravelMinutes || 0} min travel</span></div>`;
+    html += `<div class="sub">${esc(itinerary.dataLabel || "Illustrative estimates")}</div>`;
+    html += `<div class="grid">` + (itinerary.days || []).map(dayPlan => `<div class="card"><div class="badge">DAY ${dayPlan.day}</div>` + (dayPlan.stops || []).map(s => `<div class="row"><span class="strong">${esc(s.start)} · ${esc(s.name)}</span><span>€${Number(s.cost || 0).toLocaleString("en-IE")}</span></div><div class="row"><span>${esc(s.area)} · ${s.travelMinutes} min travel · ${s.minutes} min visit</span></div><div class="sub">${esc(s.reason)} · hours ${esc(s.open)}</div>`).join("") + `</div>`).join("") + `</div>`;
+  } else if (kind === "watches") {
+    html += (d.watches || []).length ? `<div class="grid">` + d.watches.map(w => {
+      const diff = (w.lastPrice != null && w.firstPrice != null) ? w.lastPrice - w.firstPrice : 0;
+      return `<div class="card ${diff < 0 ? "best" : ""}">${diff < 0 ? '<div class="badge">PRICE DROP</div>' : ""}
+        <div class="row"><span class="strong">${esc(w.label)}</span></div>
+        <div class="price">${money(w.lastPrice, w.currency)}</div>
+        <div class="row"><span>was ${money(w.firstPrice, w.currency)}</span><span class="${diff < 0 ? "drop" : diff > 0 ? "up" : ""}">${diff === 0 ? "no change" : (diff < 0 ? "▼ " : "▲ ") + money(Math.abs(diff), w.currency)}</span></div>
+        <div class="row"><span>best seen ${money(w.bestPrice, w.currency)}</span><span>${(w.history || []).length} checks</span></div>
+        <div class="btns"><button onclick='TS.callTool("stop_watching", ${JSON.stringify({ watch_id: w.id })}, this)'>Stop watching</button></div></div>`; }).join("") + `</div>`
+      : `<div class="empty">You are not watching any prices yet.</div>`;
+  } else {
+    html += `<div class="card">${esc(d.speech || JSON.stringify(d))}</div>`;
+  }
+  if (d.steps && d.steps.length) html += `<ul class="steps">` + d.steps.map(s => `<li>${esc(s)}</li>`).join("") + `</ul>`;
+  app.innerHTML = html;
+}
+
+// size reporting for flexible containers
+new ResizeObserver(() => notify("ui/notifications/size-changed", { width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight })).observe(document.body);
+
+(async () => {
+  try {
+    await request("ui/initialize", { protocolVersion: "2026-01-26", clientInfo: { name: "roamready-ai-view", version: "0.1.0" },
+                                     appCapabilities: { availableDisplayModes: ["inline", "fullscreen"] } });
+  } catch (e) {}
+  notify("ui/notifications/initialized", {});
+})();
+</script>
+</body>
+</html>

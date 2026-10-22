@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RoamReady AI · Alexa+ simulator</title>
+<style>
+  :root { --ring:#35c7ff; --bg:#05070d; --panel:#0e1524; --line:#1f2a40; --text:#eef2ff; --muted:#8e9bb5; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; background:radial-gradient(1200px 600px at 50% -10%, #16233d 0%, var(--bg) 60%); color:var(--text);
+         font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; display:flex; flex-direction:column; align-items:center; }
+  header { width:100%; max-width:1180px; display:flex; justify-content:space-between; align-items:center; padding:18px 8px 10px; }
+  header .brand { font-weight:700; letter-spacing:.3px; } header .brand span { color:var(--ring); }
+  header .meta { color:var(--muted); font-size:13px; }
+  .reset { margin-left:12px; background:#101a2e; border:1px solid var(--line); color:#cfe6ff; border-radius:9px; padding:8px 12px; cursor:pointer; }
+  .stage { display:flex; gap:18px; width:100%; max-width:1180px; padding:0 8px 24px; align-items:flex-start; }
+  .device { flex:1; background:#000; border-radius:28px; padding:18px; box-shadow:0 30px 80px rgba(0,0,0,.6), inset 0 0 0 2px #1a1a1a; }
+  .screen { position:relative; background:#0b1220; border-radius:14px; height:600px; overflow:hidden; display:flex; flex-direction:column; }
+  .lightbar { position:absolute; left:0; right:0; bottom:0; height:6px; background:transparent; transition:.3s; }
+  .listening .lightbar { background:linear-gradient(90deg,transparent,var(--ring),transparent); animation:pulse 1.1s infinite; }
+  .thinking .lightbar { background:linear-gradient(90deg,#1b5cff,var(--ring),#1b5cff); background-size:200% 100%; animation:slide 1.2s linear infinite; }
+  .speaking .lightbar { background:var(--ring); animation:pulse .6s infinite; }
+  @keyframes pulse { 0%,100% { opacity:.35 } 50% { opacity:1 } }
+  @keyframes slide { from { background-position:0 0 } to { background-position:200% 0 } }
+  .home { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:10px; color:var(--muted); text-align:center; padding:30px; }
+  .home h2 { color:var(--text); font-size:30px; margin:0; font-weight:650; }
+  .clock { font-size:64px; color:var(--text); font-weight:300; }
+  iframe { flex:1; border:0; width:100%; background:#0b1220; display:none; }
+  .caption { min-height:66px; padding:12px 18px 16px; border-top:1px solid #172238; background:#0a1020; font-size:17px; }
+  .caption .you { color:var(--muted); font-size:14px; margin-bottom:4px; }
+  .controls { display:flex; gap:10px; margin-top:14px; align-items:center; }
+  .mic { width:58px; height:58px; border-radius:50%; border:0; background:var(--ring); color:#001421; font-size:24px; cursor:pointer; flex:none; box-shadow:0 0 0 6px rgba(53,199,255,.15); }
+  .mic.on { background:#ff4d6d; box-shadow:0 0 0 8px rgba(255,77,109,.2); }
+  input { flex:1; background:#0f172a; border:1px solid var(--line); color:var(--text); border-radius:14px; padding:16px; font-size:16px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .chip { background:#101a2e; border:1px solid var(--line); color:#cfe6ff; padding:8px 12px; border-radius:99px; font-size:13px; cursor:pointer; }
+  .dev { width:360px; flex:none; background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:14px; font-size:12px; max-height:760px; overflow:auto; }
+  .dev h3 { margin:0 0 8px; font-size:13px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.6px; }
+  .ev { border-left:2px solid var(--ring); padding:6px 10px; margin:8px 0; background:#0b1322; border-radius:0 8px 8px 0; }
+  .ev.err { border-color:#ff4d6d; } .ev.note { border-color:#ffb547; }
+  .ev b { color:#bfe9ff; } .ev pre { white-space:pre-wrap; word-break:break-word; margin:4px 0 0; color:var(--muted); font-size:11px; }
+  @media (max-width: 1100px) { .stage { flex-direction:column; } .dev { width:100%; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">RoamReady AI <span>for Alexa+ simulation</span></div>
+  <div><span class="meta">Alexa+ style simulation · MCP 2025-11-25 · Streamable HTTP</span><button class="reset" id="reset">Reset demo</button></div>
+</header>
+<div class="stage">
+  <div>
+    <div class="device"><div class="screen" id="screen">
+      <div class="home" id="home"><div class="clock" id="clock"></div><h2>“Plan four days in Barcelona for two under €1,800”</h2>
+        <div>Personalized schedule, simulated trip budget and live MCP tool trace.</div></div>
+      <iframe id="view" sandbox="allow-scripts allow-popups" title="RoamReady AI view"></iframe>
+      <div class="caption"><div class="you" id="you"></div><div id="say"></div></div>
+      <div class="lightbar"></div>
+    </div></div>
+    <div class="controls">
+      <button class="mic" id="mic" title="Talk">🎙</button>
+      <input id="text" placeholder="Plan a four-day Barcelona trip for two under €1,800…" autocomplete="off">
+    </div>
+    <div class="chips" id="chips"></div>
+  </div>
+  <aside class="dev"><h3>MCP activity</h3><div id="log"></div></aside>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const screen = $("screen"), view = $("view"), log = $("log");
+let sessionId = localStorage.getItem("ts_session") || null;
+const userId = localStorage.getItem("ts_user") || (() => { const u = "user-" + Math.random().toString(36).slice(2, 8); localStorage.setItem("ts_user", u); return u; })();
+const chips = ["Plan a four-day Barcelona trip for two under €1,800; we love architecture, art and food",
+               "Sagrada Família is closed; replan the trip", "Simulate a flight provider failure and recover offline"] ;
+chips.forEach(c => { const b = document.createElement("span"); b.className = "chip"; b.textContent = c; b.onclick = () => ask(c); $("chips").appendChild(b); });
+setInterval(() => $("clock").textContent = new Date().toLocaleTimeString([], { hour:"numeric", minute:"2-digit" }), 1000);
+
+function state(s) { screen.className = "screen " + (s || ""); }
+function addLog(cls, title, body) {
+  const d = document.createElement("div"); d.className = "ev " + (cls || "");
+  const b = document.createElement("b"); b.textContent = title; d.appendChild(b);
+  if (body) { const pre = document.createElement("pre"); pre.textContent = body; d.appendChild(pre); }
+  log.prepend(d);
+}
+
+// ---------------------------------------------------------------- MCP Apps host bridge (SEP-1865)
+let current = null, viewReady = false;
+function showView(ui) {
+  current = ui; viewReady = false;
+  $("home").style.display = "none"; view.style.display = "block";
+  view.srcdoc = ui.html;
+}
+function toView(msg) { view.contentWindow && view.contentWindow.postMessage(msg, "*"); }
+window.addEventListener("message", async (ev) => {
+  if (ev.source !== view.contentWindow) return;
+  const m = ev.data || {};
+  if (m.method === "ui/initialize") {
+    toView({ jsonrpc:"2.0", id:m.id, result:{ protocolVersion:"2026-01-26", hostInfo:{ name:"alexa-plus-simulator", version:"0.1.0" },
+      hostCapabilities:{ openLinks:{}, serverTools:{}, logging:{} },
+      hostContext:{ theme:"dark", displayMode:"inline", platform:"web", locale:"en-US", containerDimensions:{ height:520 } } } });
+  } else if (m.method === "ui/notifications/initialized") {
+    viewReady = true;
+    if (current) { toView({ jsonrpc:"2.0", method:"ui/notifications/tool-input", params:current.toolInput });
+                   toView({ jsonrpc:"2.0", method:"ui/notifications/tool-result", params:current.toolResult }); }
+  } else if (m.method === "tools/call") {
+    addLog("", "view → tools/call " + m.params.name, JSON.stringify(m.params.arguments));
+    const r = await fetch("/api/tool", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ user_id:userId, ...m.params }) }).then(r => r.json());
+    toView({ jsonrpc:"2.0", id:m.id, result:r });
+    const sp = r.structuredContent && r.structuredContent.speech; if (sp) { $("say").textContent = sp; speak(sp); }
+    if (r.structuredContent && r.structuredContent.kind === "watches") toView({ jsonrpc:"2.0", method:"ui/notifications/tool-result", params:r });
+  } else if (m.method === "ui/open-link") {
+    window.open(m.params.url, "_blank"); toView({ jsonrpc:"2.0", id:m.id, result:{} });
+  } else if (m.id && m.method) { toView({ jsonrpc:"2.0", id:m.id, result:{} }); }
+});
+
+// ---------------------------------------------------------------- voice
+function speak(text) {
+  if (!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.rate = 1.03;
+  const v = speechSynthesis.getVoices().find(v => /en-US/.test(v.lang) && /(Aria|Jenny|Samantha|Google US|Zira)/i.test(v.name));
+  if (v) u.voice = v;
+  u.onstart = () => state("speaking"); u.onend = () => state("");
+  speechSynthesis.speak(u);
+}
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null;
+$("mic").onclick = () => {
+  if (!SR) { $("text").focus(); return; }
+  if (rec) { rec.stop(); return; }
+  rec = new SR(); rec.lang = "en-US"; rec.interimResults = true;
+  rec.onstart = () => { state("listening"); $("mic").classList.add("on"); };
+  rec.onresult = (e) => { const t = [...e.results].map(r => r[0].transcript).join(""); $("you").textContent = "“" + t + "”"; if (e.results[e.results.length - 1].isFinal) ask(t); };
+  rec.onend = () => { $("mic").classList.remove("on"); rec = null; if (screen.className.includes("listening")) state(""); };
+  rec.start();
+};
+$("text").addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.value.trim()) { ask(e.target.value.trim()); e.target.value = ""; } });
+$("reset").onclick = async () => {
+  $("reset").disabled = true;
+  try {
+    await fetch("/api/reset", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({session_id:sessionId, user_id:userId}) });
+    sessionId = null; localStorage.removeItem("ts_session"); log.replaceChildren(); current = null;
+    view.removeAttribute("srcdoc"); view.style.display = "none"; $("home").style.display = "flex";
+    $("you").textContent = ""; $("say").textContent = "Demo reset."; state("");
+  } catch (e) { addLog("err", "reset failed", String(e)); }
+  finally { $("reset").disabled = false; }
+};
+
+// ---------------------------------------------------------------- conversation
+async function ask(text) {
+  text = text.replace(/^alexa[, ]*/i, "");
+  $("you").textContent = "“" + text + "”"; $("say").textContent = "…"; state("thinking");
+  addLog("", "user", text);
+  try {
+    const r = await fetch("/api/chat", { method:"POST", headers:{ "Content-Type":"application/json" },
+                                          body:JSON.stringify({ session_id:sessionId, user_id:userId, text }) }).then(r => r.json());
+    sessionId = r.session_id; localStorage.setItem("ts_session", sessionId);
+    (r.trace || []).forEach(t => t.note ? addLog("note", "host", t.note)
+                                         : addLog(t.isError ? "err" : "", "tools/call " + t.tool, JSON.stringify(t.arguments) + "\n→ " + (t.speech || "")));
+    addLog("", `Alexa (${r.mode}, ${r.ms} ms)`, r.speech);
+    if (r.ui) showView(r.ui);
+    $("say").textContent = r.speech; speak(r.speech);
+  } catch (e) { $("say").textContent = "Sorry, something went wrong."; state(""); addLog("err", "error", String(e)); }
+}
+</script>
+</body>
+</html>
