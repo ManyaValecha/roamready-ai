@@ -186,7 +186,7 @@ function render(result) {
         <p class="data-note">${esc(d.dataLabel || "Illustrative estimates only.")}</p></div>`;
       html += `<div class="comparison-trips">${renderTrip(d.before, "Original plan", "before", removed)}${renderTrip(d.after, "Revised plan", "after", added)}</div>`;
     } else {
-      if (kind === "provider-fallback") html += `<div class="card"><div class="badge">SIMULATED PROVIDER FAILURE · RECOVERED OFFLINE</div><div>${esc(d.failure || "Provider unavailable")}</div></div>`;
+      if (kind === "provider-fallback") html += `<div class="card"><div class="eyebrow" role="status" aria-live="polite">Simulated provider failure · recovered offline</div><div>${esc(d.failure || "Provider unavailable")}</div></div>`;
       html += renderTrip(d, "SIMULATED TRIP ESTIMATE", "trip");
     }
     html += `<div class="sub">${esc(d.dataLabel || "All values are illustrative estimates, not live availability or quotes.")}</div>`;

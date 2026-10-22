@@ -311,7 +311,7 @@ Run the focused regression suite:
 python -m pytest -q tests/test_units.py tests/test_roamready_mcp.py tests/test_web_reset.py
 ```
 
-The 22 October 2026 Bedrock integration regression run reports **21 passing tests** for the command below. The live Bedrock service was not called; its request construction is tested with a fake HTTP client.
+The 22 October 2026 regression run reports **22 passing tests** for the command below. The live Bedrock service was not called; its request construction is tested with a fake HTTP client.
 
 Additional checks reported during the audit:
 

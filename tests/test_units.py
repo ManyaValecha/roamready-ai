@@ -164,6 +164,13 @@ def test_bedrock_chat_request_uses_openai_compatible_endpoint_without_network(mo
     assert captured["body"]["tools"] == [{"type": "function"}]
 
 
+def test_mobile_provider_failure_notice_is_in_flow_and_announced():
+    view = os.path.join(os.path.dirname(os.path.dirname(__file__)), "trip_scout", "ui", "view.html")
+    with open(view, encoding="utf-8") as f:
+        source = f.read()
+    assert 'class="eyebrow" role="status" aria-live="polite">Simulated provider failure' in source
+
+
 def test_roamready_itinerary_constraints_and_budget():
     from trip_scout.roamready import build_itinerary
     plan = build_itinerary(days=3, budget=30, interests=["art", "food"], accessible=True)
