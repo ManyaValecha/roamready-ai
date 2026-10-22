@@ -33,9 +33,16 @@
   .labels div { flex:1; text-align:center; }
   .steps { font-size:12px; color:var(--muted); margin-top:14px; border-top:1px solid var(--line); padding-top:10px; }
   .steps li { margin:2px 0; }
+  .assumptions { margin-top:10px; color:var(--muted); font-size:12px; }
+  .assumptions summary { cursor:pointer; color:var(--text); }
+  .itinerary-detail { margin-top:8px; color:var(--muted); font-size:12px; }
+  .itinerary-detail summary { cursor:pointer; color:var(--text); font-weight:600; }
+  .comparison-trips { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+  .comparison-trips > .card { min-width:0; }
   .empty { color:var(--muted); padding:30px 0; text-align:center; }
   .drop { color:var(--good); font-weight:700; }
   .up { color:var(--warn); font-weight:700; }
+  @media (max-width:620px) { .comparison-trips { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -132,18 +139,20 @@ function render(result) {
     const renderTrip = (trip, label) => `<section class="card trip-card"><div class="badge">${label}</div>
       <div class="row"><span class="strong">${trip.days} days · ${trip.travelers} travelers</span><span>Budget ${moneyEur(trip.budget)}</span></div>
       <div class="grid">${Object.entries(trip.costBreakdown || {}).map(([key, val]) => `<div class="row"><span>${esc(key.replace(/[A-Z]/g, m => " " + m).replace(/^./, c => c.toUpperCase()))}</span><span>${moneyEur(val)}</span></div>`).join("")}</div>
+      <details class="assumptions"><summary>How the simulated costs are estimated</summary><ul>${Object.values(trip.costAssumptions || {}).map(x => `<li>${esc(x)}</li>`).join("")}</ul></details>
       <div class="row"><span class="strong">Estimated trip total</span><span class="strong">${moneyEur(trip.estimatedTotal)}</span></div>
       <div class="row"><span>Budget remaining</span><span>${moneyEur(trip.remainingBudget)}</span></div>
       <div class="row"><span>Estimated local travel</span><span>${trip.estimatedTravelMinutes} min</span></div>
-      ${(trip.itinerary.days || []).map(dayPlan => `<div class="sub"><b>Day ${dayPlan.day}</b> · ${(dayPlan.stops || []).map(s => `${esc(s.start)} ${esc(s.name)} (${moneyEur(s.cost)})`).join(" · ") || "No remaining stops"}</div>`).join("")}</section>`;
+      <details class="itinerary-detail"><summary>View ${trip.days}-day itinerary</summary>${(trip.itinerary.days || []).map(dayPlan => `<div class="sub"><b>Day ${dayPlan.day}</b> · ${(dayPlan.stops || []).map(s => `${esc(s.start)} ${esc(s.name)} (${moneyEur(s.cost)})`).join(" · ") || "No remaining stops"}</div>`).join("")}</details></section>`;
     if (kind === "demo-rescue") {
       const dc = d.changes || {};
+      const changeLabel = (value, unit, lower, higher) => value === 0 ? `unchanged (${unit === "€" ? "€0" : "0 min"})` : `${unit === "€" ? "€" + Math.abs(value) : Math.abs(value) + " min"} ${value < 0 ? lower : higher}`;
       html += `<div class="card"><div class="badge">SIMULATED DISRUPTION</div><div class="strong">${esc(d.disruption)}</div>
-        <div class="row"><span>Estimated total change</span><span>${dc.estimatedCostDelta < 0 ? "−" : "+"}${moneyEur(Math.abs(dc.estimatedCostDelta))}</span></div>
-        <div class="row"><span>Budget remaining change</span><span>${dc.remainingBudgetDelta < 0 ? "−" : "+"}${moneyEur(Math.abs(dc.remainingBudgetDelta))}</span></div>
-        <div class="row"><span>Estimated travel-time change</span><span>${dc.travelMinutesDelta < 0 ? "−" : "+"}${Math.abs(dc.travelMinutesDelta)} min</span></div>
+        <div class="row"><span>Estimated trip total</span><span>${moneyEur(d.before.estimatedTotal)} → ${moneyEur(d.after.estimatedTotal)} (${changeLabel(dc.estimatedCostDelta, "€", "less", "more")})</span></div>
+        <div class="row"><span>Budget remaining</span><span>${moneyEur(d.before.remainingBudget)} → ${moneyEur(d.after.remainingBudget)} (${changeLabel(dc.remainingBudgetDelta, "€", "less", "more")})</span></div>
+        <div class="row"><span>Estimated local travel</span><span>${d.before.estimatedTravelMinutes} → ${d.after.estimatedTravelMinutes} min (${changeLabel(dc.travelMinutesDelta, "min", "fewer", "more")})</span></div>
         <div class="sub">${esc(d.dataLabel || "")}</div></div>`;
-      html += renderTrip(d.before, "BEFORE") + renderTrip(d.after, "AFTER REPLAN");
+      html += `<div class="comparison-trips">${renderTrip(d.before, "BEFORE")}${renderTrip(d.after, "AFTER REPLAN")}</div>`;
     } else {
       if (kind === "provider-fallback") html += `<div class="card"><div class="badge">SIMULATED PROVIDER FAILURE · RECOVERED OFFLINE</div><div>${esc(d.failure || "Provider unavailable")}</div></div>`;
       html += renderTrip(d, "SIMULATED TRIP ESTIMATE");

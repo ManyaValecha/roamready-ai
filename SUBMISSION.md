@@ -1,42 +1,64 @@
 # Hackathon submission packet
 
-## Official rules checked 22 October 2026
+## Official requirements rechecked 22 October 2026
 
-- Deadline: **October 23, 2026 at 12:00 p.m. Pacific Daylight Time** (19:00 UTC; **October 24 at 12:30 a.m. India Standard Time**).
-- Submit through the Devpost entry form. Include project title/description, GitHub repository URL, project media/screenshots, a publicly viewable YouTube or Vimeo demo video under 3 minutes, product feedback about developer tools/products used, and the applicable challenge/track selections. Complete the team/representative information the live form requests.
-- Public GitHub repositories need a visible open-source license. A private repository is permitted if it is shared with the Amazon and Devpost reviewers specified in the rules. This repository includes the preserved MIT license and attribution for Trip Scout-derived work.
-- The Alexa+ MCP path requires MCP specification version **2025-11-25 or later** over **Streamable HTTP**. RoamReady's server advertises 2025-11-25; the local simulator is an allowed simulated web client. The demo demonstrates actual initialize, tools/list and tools/call traffic.
-- The official FAQ describes Alexa+ toolkit access as preview-only for selected partners, permits a self-built web MCP client simulation, and says public hosting is not required. This entry makes no restricted preview, certification, live Alexa device or public deployment claim.
-- Product feedback is required. Use/adapt the factual observations in [docs/FEEDBACK.md](docs/FEEDBACK.md); entrant should confirm they reflect their own experience.
-- Do not select an AWS Builder mini-challenge (no AWS integration) or Open Source mini-challenge (no distinct qualifying contribution documented) unless the entrant independently verifies eligibility.
+- **Deadline:** October 23, 2026 at 12:00 p.m. PDT (19:00 UTC; October 24 at 12:30 a.m. IST).
+- **Track:** Alexa+. Eligible implementation paths include a working Agent Skill or a self-hosted MCP server using MCP 2025-11-25 or later over Streamable HTTP; an own-web-client simulated experience is also permitted. Source and demonstration must prove the chosen path. The code imports and calls FastMCP and the browser client performs actual protocol calls; local integration test negotiated 2025-11-25.
+- **Required entry material:** project text description; GitHub repository URL with source, assets and setup instructions; public YouTube or Vimeo video under three minutes showing the project running on its intended platform; Product Feedback for each tool/API/SDK used; primary track and mini-challenge selection. Team entrants appoint an authorized representative. The actual logged-in form may expose additional fields; inspect it before submit.
+- **GitHub:** Rules require a GitHub repository. Public repository must include an open-source license visible at the top/About. Private repository must be shared with the listed Devpost address and Amazon reviewers `knmeiss`, `giolaq`, `anishamalde`, `mosesroth`, and `emersonsklar`; invitees must accept. This repo has an MIT LICENSE. The maintainer must ensure the GitHub About/license metadata also displays correctly after publishing.
+- **Demo video:** publicly viewable on YouTube or Vimeo, under 3:00, show the functioning project, and exclude third-party trademarks/copyrighted media unless rights are held.
+- **Optional fields:** feature requests and friction-log entries. The rules say friction logs can add up to 10% to judging; a factual, evidenced entry is drafted in [docs/FEEDBACK.md](docs/FEEDBACK.md). Do not copy it unless it matches the entrant's own experience.
+- **New/existing work:** if this project existed before the Submission Period began, rules require significant updates after August 31, 2026 and an explanation/demo of those changes. RoamReady updates made for this entry add the four-day constrained demo, personalized interests/party size, simulated total-budget breakdown, structured MCP disruption-rescue comparison, provider-failure fallback, reproducible reset, and tested simulator flow. The entrant should confirm project provenance/timing and describe the update truthfully.
+- **No AWS Builder claim:** no AWS service or Kiro Crew integration is present. No Open Source mini-challenge claim is prepared: no separate qualifying public-repository contribution during the window is documented.
+- **No restricted access claims:** Alexa+ add-on tools are preview-only for select partners according to the FAQ; its guidance explicitly permits a self-built web MCP client. Hosting is not required. This project does not claim Alexa+ preview access, Amazon certification, Alexa device connection, public deployment, live travel quotes or bookings.
 
-Official references: [Devpost rules](https://amazonappdev2026.devpost.com/rules) · [Devpost FAQ](https://amazonappdev2026.devpost.com/details/faqs). Recheck the live form immediately before submitting in case its fields/rules have changed.
+Official references: [Devpost rules](https://amazonappdev2026.devpost.com/rules) · [Devpost FAQ](https://amazonappdev2026.devpost.com/details/faqs). Recheck both and the logged-in submission form immediately before filing.
 
-## Submission-ready copy
+## Submission-ready drafts
 
-**Title:** RoamReady AI — Budget-first city trips, ready for a change of plans
+**Project title**
 
-**Short description:** A local web MCP travel agent that turns a party size, interests and a strict budget into a four-day Barcelona itinerary, then replans when a simulated disruption hits—showing every cost and travel-time change.
+RoamReady AI — A city trip that adapts when plans change
 
-**Problem and users:** Travelers planning short city breaks often have to reconcile competing interests, a fixed budget and a last-minute closure across disconnected tools. RoamReady is for independent travelers who want a useful first itinerary and a clear recovery option without opaque recommendations.
+**Short description**
 
-**Solution and distinctive contribution:** RoamReady combines the preserved Trip Scout planning/search foundation with an Alexa+-style local web simulator, a real Streamable HTTP MCP server, structured itinerary and cost output, and a deterministic disruption rescue workflow. The added demo mode gives judges a repeatable four-day, two-person €1,800 Barcelona scenario, a before/after rescue comparison, transparent simulated costs and a provider-outage recovery path. All demo prices, venue availability and travel times are estimates; no booking is made.
+RoamReady is a local travel-planning agent for people balancing interests, a hard trip budget and unexpected closures. It builds a four-day Barcelona itinerary for two, then replans after a simulated landmark closure and shows the before/after budget and local travel-time changes. A browser MCP client calls a self-hosted Streamable HTTP server and renders its structured results. The demo is deterministic; prices, venue details, disruption and travel times are simulated estimates, and no reservation is made.
 
-**How MCP is used:** The browser simulator acts as an MCP client. It initializes a Streamable HTTP session, discovers tools with `tools/list`, and calls `plan_demo_trip`, `rescue_demo_trip_tool`, and `simulate_provider_failure` via `tools/call`. The server returns structured results rendered in the itinerary view and visible activity trace. It targets MCP 2025-11-25.
+**Problem / target user**
 
-**Built With:** Python, FastMCP / MCP Python SDK, Streamable HTTP, Starlette, SQLite, vanilla JavaScript/HTML/CSS, pytest, and the MIT-licensed Trip Scout source foundation.
+Independent travelers planning short city breaks have to fit activities, meals, lodging and transport inside a budget, then manually rebuild plans when an attraction becomes unavailable. RoamReady demonstrates a clear plan-and-recovery workflow for travelers who want to inspect both recommendations and tradeoffs.
 
-**Demo video plan (2:30):** 0:00 identify local simulation/MCP; 0:20 submit Barcelona request and show tool call, structured itinerary and €1,712 breakdown; 1:05 trigger clearly simulated Sagrada Família closure and show €74/32-minute reduction; 1:45 inject simulated provider 503 and show offline recovery; 2:15 reset and disclose no live quotes/bookings/device integration. Keep under three minutes and publish viewable on YouTube or Vimeo.
+**What is original / what changed**
 
-## Entrant checklist
+Built on the MIT-licensed Trip Scout foundation, RoamReady adds an offline, deterministic Barcelona scenario; party-size and interest-aware day planning; a complete simulated trip cost breakdown; a simulated disruption rescue with original/revised itinerary and cost/time deltas; local provider-failure recovery; and an Alexa+-style browser host that visibly makes real MCP calls. This distinct conversational rescue flow and its repeatable UI were implemented for the hackathon entry; the entrant should verify dates/provenance before making a personal authorship statement.
 
-- [ ] Review final rules and complete the Devpost form before deadline.
-- [ ] Create a public GitHub repository (or share a private repository with the designated reviewers); confirm LICENSE, source, screenshot, setup and attribution are visible.
-- [ ] Upload a publicly viewable demo video under 3 minutes; paste URL into entry.
-- [ ] Add screenshots/project media from the running app.
-- [ ] Fill product feedback based on entrant's actual use of the tools.
-- [ ] Enter team and representative information as requested by the form.
-- [ ] Select the appropriate Alexa+ track; only claim mini-challenges with evidence.
-- [ ] Verify repository URL, video URL, screenshots, team fields and final Devpost confirmation receipt.
+**How the required technology is used**
 
-The repository is not published and the submission has not been filed. Those steps require the entrant's accounts and final review.
+The local browser simulator is an MCP client. It initializes a Streamable HTTP connection to the self-hosted FastMCP server, discovers tools with `tools/list`, and invokes `plan_demo_trip`, `rescue_demo_trip_tool`, and `simulate_provider_failure` with `tools/call`. The server returns structured content used by the itinerary and comparison cards. The integration test verifies protocol version `2025-11-25`. The simulator is not an Amazon Alexa device or the gated Alexa+ preview client.
+
+**Built With**
+
+Python, MCP Python SDK / FastMCP, MCP Streamable HTTP, Starlette, Uvicorn, SQLite, HTML/CSS/JavaScript, pytest, and the MIT-licensed Trip Scout foundation. No AWS service or Alexa+ preview SDK was used.
+
+**Friction log**
+
+Use the single factual MCP SDK deprecation entry in [docs/FEEDBACK.md](docs/FEEDBACK.md) only if the entrant confirms it reflects their own work.
+
+**Demo video**
+
+Record to the 2:40 run-of-show in [DEMO.md](DEMO.md), publish publicly on YouTube or Vimeo, verify the final duration is under three minutes, and paste the video URL in the form.
+
+## Manual publishing and submission checklist
+
+- [ ] Confirm entrant eligibility, team representative authority, repository provenance and hackathon-period update dates.
+- [ ] Review latest rules and actual logged-in Devpost fields; submit before the deadline.
+- [ ] Create/publish the GitHub repository. Choose public with MIT license visible in the About area, or private and share with the exact Devpost/Amazon reviewers; verify invitations are accepted.
+- [ ] Confirm source, tests, screenshot/media, attribution, setup docs and local demo are included; paste GitHub URL.
+- [ ] Record the working UI and MCP trace, publish video publicly to YouTube/Vimeo, and paste its URL.
+- [ ] Add current screenshots/media to Devpost; avoid presenting old package-result sample cards as live prices.
+- [ ] Fill Product Feedback from the entrant's actual experience and attach only factual friction entries.
+- [ ] Select Alexa+ primary track; select no mini-challenge unless eligibility is independently supported.
+- [ ] Complete title, project description, team/representative and any additional fields shown in the form.
+- [ ] Review all links and disclosures, submit, and retain the confirmation page/email.
+
+The repository is not published and the entry is not filed. Those steps require the entrant's GitHub/Devpost/YouTube or Vimeo accounts and final approval.

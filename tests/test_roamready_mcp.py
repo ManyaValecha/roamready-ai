@@ -6,7 +6,7 @@ import sys
 import time
 
 from mcp import ClientSession
-from mcp.client.streamable_http import streamablehttp_client
+from mcp.client.streamable_http import streamable_http_client
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -22,7 +22,7 @@ async def _exercise_server():
     try:
         for _ in range(50):
             try:
-                async with streamablehttp_client("http://127.0.0.1:8876/mcp") as (read, write, _):
+                async with streamable_http_client("http://127.0.0.1:8876/mcp") as (read, write, _):
                     async with ClientSession(read, write) as session:
                         initialized = await session.initialize()
                         assert initialized.protocolVersion >= "2025-11-25"

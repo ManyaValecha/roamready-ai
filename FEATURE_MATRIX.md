@@ -4,7 +4,7 @@
 |---|---|---|---|
 | Attraction itinerary | Verified: city attraction query, distance matrix, greedy TSP ordering and time-limited route in `planner.py`; requires Google/Foursquare credentials | Not part of implemented tool set; its planner focuses on flights/hotels | New deterministic Barcelona attraction plan; interest, estimated budget, step-free filter, opening-window checks and area travel-time ordering |
 | Round-trip travel packages | Not found | Verified: date-window flight search + hotel matching + package ranking (`plan_trip`) | Retained from Trip Scout |
-| Flight/hotel search | Not found | Verified live Google Flights/Hotels search-result engines | Retained; availability and prices can change, network failure possible |
+| Flight/hotel search | Not found | Source implements unofficial Google Travel result-page parsing | Retained experimental parsing; this audit tested transport with mocks only. No live supplier result/terms validation is claimed. |
 | Persistent profile | Not found | Verified SQLite user profile and saved trip records | Retained, plus explicit delete-memory tool |
 | Price tracking | Not found | Verified SQLite watches and history; a recheck calls the flight search | Retained |
 | Alexa integration | Alexa Skills Kit Lambda request/response handler is implemented; no evidence of new Alexa+ MCP | MCP server and Alexa+-style web host; no private Alexa+ preview integration | Self-hosted MCP and web simulation, never represented as real device integration |

@@ -24,6 +24,8 @@
   @keyframes slide { from { background-position:0 0 } to { background-position:200% 0 } }
   .home { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:10px; color:var(--muted); text-align:center; padding:30px; }
   .home h2 { color:var(--text); font-size:30px; margin:0; font-weight:650; }
+  .home .promise { max-width:650px; color:#cfe6ff; font-size:16px; line-height:1.5; }
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
   .clock { font-size:64px; color:var(--text); font-weight:300; }
   iframe { flex:1; border:0; width:100%; background:#0b1220; display:none; }
   .caption { min-height:66px; padding:12px 18px 16px; border-top:1px solid #172238; background:#0a1020; font-size:17px; }
@@ -34,6 +36,7 @@
   input { flex:1; background:#0f172a; border:1px solid var(--line); color:var(--text); border-radius:14px; padding:16px; font-size:16px; }
   .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
   .chip { background:#101a2e; border:1px solid var(--line); color:#cfe6ff; padding:8px 12px; border-radius:99px; font-size:13px; cursor:pointer; }
+  button:focus-visible, input:focus-visible { outline:3px solid var(--ring); outline-offset:2px; }
   .dev { width:360px; flex:none; background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:14px; font-size:12px; max-height:760px; overflow:auto; }
   .dev h3 { margin:0 0 8px; font-size:13px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.6px; }
   .ev { border-left:2px solid var(--ring); padding:6px 10px; margin:8px 0; background:#0b1322; border-radius:0 8px 8px 0; }
@@ -44,25 +47,26 @@
 </head>
 <body>
 <header>
-  <div class="brand">RoamReady AI <span>for Alexa+ simulation</span></div>
+  <div class="brand"><h1 style="display:inline;font-size:inherit;margin:0">RoamReady AI</h1> <span>for Alexa+ simulation</span></div>
   <div><span class="meta">Alexa+ style simulation · MCP 2025-11-25 · Streamable HTTP</span><button class="reset" id="reset">Reset demo</button></div>
 </header>
 <div class="stage">
   <div>
     <div class="device"><div class="screen" id="screen">
-      <div class="home" id="home"><div class="clock" id="clock"></div><h2>“Plan four days in Barcelona for two under €1,800”</h2>
-        <div>Personalized schedule, simulated trip budget and live MCP tool trace.</div></div>
+      <div class="home" id="home"><div class="clock" id="clock" aria-hidden="true"></div><h2>When a landmark closes, rebuild the trip around it.</h2>
+        <div class="promise">RoamReady plans a Barcelona break around your interests and budget, then shows the cost and travel-time impact when plans change.</div>
+        <div>Four days · two travelers · €1,800 total budget · local MCP demo</div></div>
       <iframe id="view" sandbox="allow-scripts allow-popups" title="RoamReady AI view"></iframe>
-      <div class="caption"><div class="you" id="you"></div><div id="say"></div></div>
+      <div class="caption"><div class="you" id="you"></div><div id="say" role="status" aria-live="polite" aria-atomic="true"></div></div>
       <div class="lightbar"></div>
     </div></div>
     <div class="controls">
-      <button class="mic" id="mic" title="Talk">🎙</button>
-      <input id="text" placeholder="Plan a four-day Barcelona trip for two under €1,800…" autocomplete="off">
+      <button class="mic" id="mic" title="Talk" aria-label="Speak a request; typing is also available">🎙</button>
+      <label class="sr-only" for="text">Trip request</label><input id="text" placeholder="Plan a four-day Barcelona trip for two under €1,800…" autocomplete="off">
     </div>
     <div class="chips" id="chips"></div>
   </div>
-  <aside class="dev"><h3>MCP activity</h3><div id="log"></div></aside>
+  <aside class="dev" aria-label="MCP activity"><h3>MCP activity</h3><div id="log" role="log" aria-live="polite" aria-relevant="additions"></div></aside>
 </div>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -71,7 +75,7 @@ let sessionId = localStorage.getItem("ts_session") || null;
 const userId = localStorage.getItem("ts_user") || (() => { const u = "user-" + Math.random().toString(36).slice(2, 8); localStorage.setItem("ts_user", u); return u; })();
 const chips = ["Plan a four-day Barcelona trip for two under €1,800; we love architecture, art and food",
                "Sagrada Família is closed; replan the trip", "Simulate a flight provider failure and recover offline"] ;
-chips.forEach(c => { const b = document.createElement("span"); b.className = "chip"; b.textContent = c; b.onclick = () => ask(c); $("chips").appendChild(b); });
+chips.forEach(c => { const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = c; b.onclick = () => ask(c); $("chips").appendChild(b); });
 setInterval(() => $("clock").textContent = new Date().toLocaleTimeString([], { hour:"numeric", minute:"2-digit" }), 1000);
 
 function state(s) { screen.className = "screen " + (s || ""); }
@@ -80,6 +84,13 @@ function addLog(cls, title, body) {
   const b = document.createElement("b"); b.textContent = title; d.appendChild(b);
   if (body) { const pre = document.createElement("pre"); pre.textContent = body; d.appendChild(pre); }
   log.prepend(d);
+}
+async function fetchJson(url, options) {
+  const response = await fetch(url, options);
+  let payload;
+  try { payload = await response.json(); } catch (_) { throw new Error(`Server returned HTTP ${response.status} without a readable response.`); }
+  if (!response.ok) throw new Error(payload.detail || payload.error || `Request failed (HTTP ${response.status}).`);
+  return payload;
 }
 
 // ---------------------------------------------------------------- MCP Apps host bridge (SEP-1865)
@@ -103,7 +114,7 @@ window.addEventListener("message", async (ev) => {
                    toView({ jsonrpc:"2.0", method:"ui/notifications/tool-result", params:current.toolResult }); }
   } else if (m.method === "tools/call") {
     addLog("", "view → tools/call " + m.params.name, JSON.stringify(m.params.arguments));
-    const r = await fetch("/api/tool", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ user_id:userId, ...m.params }) }).then(r => r.json());
+    const r = await fetchJson("/api/tool", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ user_id:userId, ...m.params }) });
     toView({ jsonrpc:"2.0", id:m.id, result:r });
     const sp = r.structuredContent && r.structuredContent.speech; if (sp) { $("say").textContent = sp; speak(sp); }
     if (r.structuredContent && r.structuredContent.kind === "watches") toView({ jsonrpc:"2.0", method:"ui/notifications/tool-result", params:r });
@@ -114,12 +125,12 @@ window.addEventListener("message", async (ev) => {
 
 // ---------------------------------------------------------------- voice
 function speak(text) {
-  if (!("speechSynthesis" in window)) return;
+  if (!("speechSynthesis" in window)) { state(""); return; }
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.rate = 1.03;
   const v = speechSynthesis.getVoices().find(v => /en-US/.test(v.lang) && /(Aria|Jenny|Samantha|Google US|Zira)/i.test(v.name));
   if (v) u.voice = v;
-  u.onstart = () => state("speaking"); u.onend = () => state("");
+  u.onstart = () => state("speaking"); u.onend = () => state(""); u.onerror = () => state("");
   speechSynthesis.speak(u);
 }
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -130,18 +141,19 @@ $("mic").onclick = () => {
   rec = new SR(); rec.lang = "en-US"; rec.interimResults = true;
   rec.onstart = () => { state("listening"); $("mic").classList.add("on"); };
   rec.onresult = (e) => { const t = [...e.results].map(r => r[0].transcript).join(""); $("you").textContent = "“" + t + "”"; if (e.results[e.results.length - 1].isFinal) ask(t); };
+  rec.onerror = (e) => { $("say").textContent = `Voice input unavailable (${e.error || "browser error"}). Type your request instead.`; addLog("note", "voice input unavailable", "Use the trip request field and press Enter."); state(""); };
   rec.onend = () => { $("mic").classList.remove("on"); rec = null; if (screen.className.includes("listening")) state(""); };
-  rec.start();
+  try { rec.start(); } catch (e) { $("say").textContent = "Voice input could not start. Type your request instead."; addLog("note", "voice input unavailable", String(e)); rec = null; state(""); }
 };
 $("text").addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.value.trim()) { ask(e.target.value.trim()); e.target.value = ""; } });
 $("reset").onclick = async () => {
   $("reset").disabled = true;
   try {
-    await fetch("/api/reset", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({session_id:sessionId, user_id:userId}) });
+    await fetchJson("/api/reset", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({session_id:sessionId, user_id:userId}) });
     sessionId = null; localStorage.removeItem("ts_session"); log.replaceChildren(); current = null;
     view.removeAttribute("srcdoc"); view.style.display = "none"; $("home").style.display = "flex";
-    $("you").textContent = ""; $("say").textContent = "Demo reset."; state("");
-  } catch (e) { addLog("err", "reset failed", String(e)); }
+    $("you").textContent = ""; $("say").textContent = "Demo reset. Start a new trip whenever you’re ready."; state("");
+  } catch (e) { $("say").textContent = "Reset failed. Your current demo state is still available; retry reset."; addLog("err", "reset failed", String(e)); }
   finally { $("reset").disabled = false; }
 };
 
@@ -151,15 +163,15 @@ async function ask(text) {
   $("you").textContent = "“" + text + "”"; $("say").textContent = "…"; state("thinking");
   addLog("", "user", text);
   try {
-    const r = await fetch("/api/chat", { method:"POST", headers:{ "Content-Type":"application/json" },
-                                          body:JSON.stringify({ session_id:sessionId, user_id:userId, text }) }).then(r => r.json());
+    const r = await fetchJson("/api/chat", { method:"POST", headers:{ "Content-Type":"application/json" },
+                                               body:JSON.stringify({ session_id:sessionId, user_id:userId, text }) });
     sessionId = r.session_id; localStorage.setItem("ts_session", sessionId);
     (r.trace || []).forEach(t => t.note ? addLog("note", "host", t.note)
                                          : addLog(t.isError ? "err" : "", "tools/call " + t.tool, JSON.stringify(t.arguments) + "\n→ " + (t.speech || "")));
     addLog("", `Alexa (${r.mode}, ${r.ms} ms)`, r.speech);
     if (r.ui) showView(r.ui);
     $("say").textContent = r.speech; speak(r.speech);
-  } catch (e) { $("say").textContent = "Sorry, something went wrong."; state(""); addLog("err", "error", String(e)); }
+  } catch (e) { $("say").textContent = "I couldn’t reach the local trip service. Check that both demo services are running, then try again."; state(""); addLog("err", "request failed", String(e)); }
 }
 </script>
 </body>
