@@ -17,7 +17,7 @@ vercel deploy --prod
 
 When prompted, provide separate cryptographically random values for the two secrets. Do not put them in `.env`, source control, screenshots, logs, or client-side settings. To deploy a preview, add the same variables to the Preview environment before using `vercel deploy`.
 
-The deployment uses the Vercel-provided `VERCEL_URL` to bind MCP host and origin checks to its assigned hostname. Requests to MCP without its bearer token receive `401`. The public web app's own server-side proxy supplies the token and allows only the offline demo tools.
+The deployment uses `VERCEL_PROJECT_PRODUCTION_URL` when available (falling back to `VERCEL_URL`) for its server-side MCP request. This avoids routing that internal request through a deployment-specific URL that may be protected by Vercel Authentication. MCP host and origin checks are bound to the selected hostname. Requests to MCP without its bearer token receive `401`. The public web app's own server-side proxy supplies the token and allows only the offline demo tools.
 
 ## Data and operational limits
 

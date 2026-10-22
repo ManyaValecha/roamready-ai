@@ -11,7 +11,10 @@ os.environ["ROAMREADY_DEMO_MODE"] = "1"
 os.environ["TRIP_SCOUT_STATELESS_HTTP"] = "1"
 os.environ["TRIP_SCOUT_DB"] = "/tmp/roamready.db"
 
-deployment_host = os.environ.get("VERCEL_URL")
+# VERCEL_URL is the deployment-specific host. Vercel may protect that host with
+# deployment authentication, which blocks the app's server-side MCP client.
+# Prefer the public production alias for this internal HTTP hop.
+deployment_host = os.environ.get("VERCEL_PROJECT_PRODUCTION_URL") or os.environ.get("VERCEL_URL")
 if not deployment_host:
     raise RuntimeError("VERCEL_URL is required to bind the hosted MCP endpoint to this deployment.")
 os.environ["TRIP_SCOUT_MCP_URL"] = f"https://{deployment_host}/mcp"
