@@ -21,6 +21,9 @@ DEFAULT_PROFILE = {
     "hotelClasses": [],        # e.g. [4, 5]
     "language": "en",
     "country": "us",
+    "tripBudgetEUR": 1800,
+    "interests": ["architecture", "art", "food"],
+    "stepFreeAccess": False,
 }
 
 
@@ -147,3 +150,12 @@ class Store:
         with self.lock:
             rows = self.db.execute("SELECT * FROM trips WHERE user_id=? ORDER BY created DESC LIMIT ?", (user_id, limit)).fetchall()
         return [{"id": r["id"], "label": r["label"], "created": r["created"], "data": json.loads(r["data"])} for r in rows]
+
+    def delete_trip(self, user_id, trip_id):
+        """Delete one saved trip without changing profile or price watches."""
+        with self.lock:
+            deleted = self.db.execute(
+                "DELETE FROM trips WHERE user_id=? AND id=?", (user_id, trip_id)
+            ).rowcount
+            self.db.commit()
+        return deleted > 0

@@ -162,6 +162,30 @@ def test_four_day_eur_demo_and_rescue_comparison():
     assert rescue["changes"]["estimatedCostDelta"] == rescue["after"]["estimatedTotal"] - rescue["before"]["estimatedTotal"]
 
 
+def test_demo_accessibility_preference_filters_original_and_rescue():
+    from trip_scout.roamready import build_demo_trip, rescue_demo_trip
+    trip = build_demo_trip(4, 1800, 2, ["architecture", "art", "food"], accessible=True)
+    stops = [stop for day in trip["itinerary"]["days"] for stop in day["stops"]]
+    assert trip["accessibilityFilter"] is True
+    assert all(stop["stepFree"] for stop in stops)
+    rescued = rescue_demo_trip(4, 1800, 2, ["architecture", "art", "food"], accessible=True)
+    rescued_stops = [stop for day in rescued["after"]["itinerary"]["days"] for stop in day["stops"]]
+    assert all(stop["stepFree"] for stop in rescued_stops)
+
+
+def test_store_deletes_one_trip_without_touching_profile_or_other_trips():
+    with tempfile.TemporaryDirectory() as d:
+        s = Store(os.path.join(d, "saved-trips.db"))
+        s.update_profile("u", homeAirport="JFK")
+        first = s.save_trip("u", "Trip one", {"value": 1})
+        second = s.save_trip("u", "Trip two", {"value": 2})
+        assert s.delete_trip("u", first) is True
+        assert [trip["id"] for trip in s.list_trips("u")] == [second]
+        assert s.get_profile("u")["homeAirport"] == "JFK"
+        assert s.delete_trip("someone-else", second) is False
+        s.close()
+
+
 def test_live_flight_and_hotel_provider_503_handled_without_network(monkeypatch):
     from trip_scout.engines import flights, hotels
     class Response:

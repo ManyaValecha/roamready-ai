@@ -32,6 +32,14 @@ async def _exercise_server():
                         p = plan.structuredContent
                         assert p["kind"] == "demo-trip" and p["estimatedTotal"] <= 1800
                         assert p["costBreakdown"]["airfare"] + p["costBreakdown"]["lodging"] + p["costBreakdown"]["meals"] + p["costBreakdown"]["localTransport"] + p["costBreakdown"]["activities"] == p["estimatedTotal"]
+                        saved = await session.call_tool("save_demo_trip_tool", {"trip": p})
+                        trip_id = saved.structuredContent["trip"]["id"]
+                        listed = await session.call_tool("list_saved_trips", {})
+                        assert any(t["id"] == trip_id for t in listed.structuredContent["trips"])
+                        deleted = await session.call_tool("delete_saved_trip_tool", {"trip_id": trip_id})
+                        assert not deleted.isError
+                        listed = await session.call_tool("list_saved_trips", {})
+                        assert all(t["id"] != trip_id for t in listed.structuredContent["trips"])
                         rescue = await session.call_tool("rescue_demo_trip_tool", {"days":4,"travelers":2,"trip_budget_eur":1800,"interests":["architecture","art","food"],"disruption":"Sagrada Família closure"})
                         r = rescue.structuredContent
                         assert r["kind"] == "demo-rescue" and r["after"]["estimatedTotal"] <= 1800

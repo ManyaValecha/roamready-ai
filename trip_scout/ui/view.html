@@ -5,26 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>RoamReady AI</title>
 <style>
-  :root { --bg:#0b1220; --card:#131c2e; --line:#23304a; --text:#eef2ff; --muted:#93a1bd; --accent:#35c7ff; --good:#3ddc97; --warn:#ffb547; --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  :root { color-scheme:light; --bg:#fbfaf6; --card:#fffefa; --line:#e5e1d7; --text:#202723; --muted:#68716b; --accent:#187d78; --good:#267259; --warn:#a46528; --soft:#e7f1ed; --font:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
   * { box-sizing: border-box; }
   html, body { margin:0; background:var(--bg); color:var(--text); font-family:var(--font); }
-  .wrap { padding:18px 20px 20px; }
-  h1 { font-size:20px; margin:0 0 4px; font-weight:650; letter-spacing:.2px; }
-  .sub { color:var(--muted); font-size:13px; margin-bottom:14px; }
-  .grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; position:relative; overflow:hidden; }
-  .trip-card { padding-top:38px; }
-  .card.best { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
-  .badge { position:absolute; top:10px; right:10px; font-size:11px; padding:3px 8px; border-radius:99px; background:var(--accent); color:#001421; font-weight:700; }
+  .wrap { padding:22px clamp(15px,3vw,34px) 30px; }
+  h1 { font-size:clamp(24px,3vw,34px); line-height:1.08; margin:0 0 7px; font-weight:680; letter-spacing:-.045em; }
+  .sub { color:var(--muted); font-size:13px; line-height:1.5; margin-bottom:16px; }
+  .grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:17px; padding:17px; position:relative; }
+  .trip-card { padding-top:48px; }
+  .card.best { border-color:#9dbeb2; box-shadow:0 7px 22px rgba(30,75,61,.07); }
+  .badge { position:absolute; top:13px; right:13px; font-size:10px; padding:5px 9px; border-radius:99px; background:var(--soft); color:#245e58; font-weight:750; letter-spacing:.045em; }
   .price { font-size:28px; font-weight:750; }
   .price small { font-size:13px; color:var(--muted); font-weight:500; }
-  .row { display:flex; justify-content:space-between; gap:8px; font-size:13px; color:var(--muted); margin-top:6px; }
+  .row { display:flex; justify-content:space-between; gap:10px; font-size:13px; line-height:1.45; color:var(--muted); margin-top:7px; }
   .strong { color:var(--text); font-weight:600; }
   .photo { width:100%; height:110px; object-fit:cover; border-radius:10px; margin-bottom:10px; background:#1b2640; }
   .btns { display:flex; gap:8px; margin-top:12px; }
-  button { flex:1; background:#1d2a44; color:var(--text); border:1px solid var(--line); border-radius:10px; padding:9px 10px; font-size:13px; cursor:pointer; }
-  button.primary { background:var(--accent); color:#001421; border-color:var(--accent); font-weight:700; }
-  button:disabled { opacity:.6; cursor:default; }
+  button { flex:1; background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font:inherit; font-size:13px; cursor:pointer; transition:background .16s,border-color .16s; }
+  button:hover { background:var(--soft); border-color:#9dbeb2; }
+  button.primary { background:var(--accent); color:white; border-color:var(--accent); font-weight:700; }
+  button.primary:hover { background:#126a65; }
+  button:disabled { opacity:.62; cursor:wait; }
+  button:focus-visible, summary:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
   .bars { display:flex; align-items:flex-end; gap:6px; height:130px; margin:8px 0 6px; }
   .bar { flex:1; background:#26406b; border-radius:6px 6px 0 0; position:relative; min-height:6px; }
   .bar.min { background:var(--good); }
@@ -37,12 +40,33 @@
   .assumptions summary { cursor:pointer; color:var(--text); }
   .itinerary-detail { margin-top:8px; color:var(--muted); font-size:12px; }
   .itinerary-detail summary { cursor:pointer; color:var(--text); font-weight:600; }
-  .comparison-trips { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+  .comparison-trips { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:14px; align-items:start; }
   .comparison-trips > .card { min-width:0; }
-  .empty { color:var(--muted); padding:30px 0; text-align:center; }
+  .empty { color:var(--muted); padding:40px 12px; text-align:center; background:#f5f4ef; border:1px dashed #d6d2c8; border-radius:14px; }
   .drop { color:var(--good); font-weight:700; }
   .up { color:var(--warn); font-weight:700; }
-  @media (max-width:620px) { .comparison-trips { grid-template-columns:1fr; } }
+  .eyebrow { color:var(--accent); text-transform:uppercase; letter-spacing:.12em; font-size:10px; font-weight:800; margin:0 0 7px; }
+  .disruption { background:#f7f0e5; border-color:#ead8ba; margin:14px 0; }
+  .metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:15px; }
+  .metric { border:1px solid var(--line); background:#fbfaf6; border-radius:12px; padding:12px; min-width:0; }
+  .metric span { display:block; color:var(--muted); font-size:11px; line-height:1.35; }
+  .metric strong { display:block; margin-top:5px; font-size:17px; letter-spacing:-.03em; }
+  .metric em { font-size:11px; font-style:normal; color:var(--good); font-weight:650; }
+  .day-nav { display:flex; gap:6px; overflow:auto; padding:2px 0 12px; margin-top:12px; }
+  .day-nav button { flex:none; padding:8px 12px; border-radius:999px; font-size:12px; }
+  .day-nav button[aria-selected="true"] { background:#dcebe5; border-color:#a8c9bd; color:#205f58; font-weight:750; }
+  .day-panel { border-top:1px solid var(--line); padding-top:11px; }
+  .activity { display:grid; grid-template-columns:68px minmax(0,1fr) auto; gap:10px; align-items:start; padding:12px 0; border-bottom:1px solid #eeece5; }
+  .activity:last-child { border-bottom:0; }
+  .activity-time { color:var(--accent); font-size:12px; font-weight:750; }
+  .activity h3 { font-size:14px; margin:0; letter-spacing:-.015em; }
+  .activity p { color:var(--muted); font-size:11px; line-height:1.45; margin:4px 0 0; }
+  .activity-cost { white-space:nowrap; font-weight:700; font-size:12px; }
+  .activity.changed { background:#f4f6ef; margin:0 -8px; padding:12px 8px; border-radius:10px; }
+  .change-note { color:#7a542c; font-size:11px; margin-top:8px; }
+  .data-note { border-left:2px solid var(--accent); padding-left:10px; margin:14px 0 0; color:var(--muted); font-size:11px; line-height:1.5; }
+  @media (max-width:620px) { .comparison-trips { grid-template-columns:1fr; } .metrics { grid-template-columns:1fr; } .metric { display:flex; justify-content:space-between; align-items:center; gap:10px; } .metric strong { margin:0; text-align:right; } }
+  @media (prefers-reduced-motion: reduce) { *,*::before,*::after { transition-duration:.01ms !important; scroll-behavior:auto !important; } }
 </style>
 </head>
 <body>
@@ -53,7 +77,7 @@ let nextId = 1; const pending = {};
 function send(msg) { window.parent.postMessage(msg, "*"); }
 function request(method, params) {
   const id = nextId++; send({ jsonrpc: "2.0", id, method, params });
-  return new Promise((resolve, reject) => { pending[id] = { resolve, reject }; });
+  return new Promise((resolve, reject) => { const timer = setTimeout(() => { delete pending[id]; reject(new Error("The local demo did not respond. Try again.")); }, 15000); pending[id] = { resolve: value => { clearTimeout(timer); resolve(value); }, reject: error => { clearTimeout(timer); reject(error); } }; });
 }
 function notify(method, params) { send({ jsonrpc: "2.0", method, params }); }
 window.addEventListener("message", (ev) => {
@@ -66,7 +90,7 @@ window.addEventListener("message", (ev) => {
   if (m.method === "ui/notifications/tool-input") showLoading(m.params && m.params.arguments);
 });
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
-const money = (v, c) => v == null ? "–" : new Intl.NumberFormat("en-US", { style:"currency", currency:c || "USD", maximumFractionDigits:0 }).format(v);
+const money = (v, c) => v == null ? "–" : new Intl.NumberFormat("en-IE", { style:"currency", currency:c || "EUR", maximumFractionDigits:0 }).format(v);
 const hm = (m) => m == null ? "" : `${Math.floor(m/60)}h ${m%60}m`;
 const t = (iso) => { if (!iso) return ""; const d = new Date(iso.length > 10 ? iso : iso + "T00:00"); return d.toLocaleString("en-US", { weekday:"short", hour:"numeric", minute:"2-digit" }); };
 const day = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" });
@@ -78,7 +102,7 @@ async function openLink(url) { try { await request("ui/open-link", { url }); } c
 async function callTool(name, args, btn) {
   if (btn) { btn.disabled = true; btn.textContent = "Working…"; }
   try { const r = await request("tools/call", { name, arguments: args }); if (btn) btn.textContent = "✓ Done"; return r; }
-  catch (e) { if (btn) { btn.textContent = "Failed"; btn.disabled = false; } }
+  catch (e) { if (btn) { btn.textContent = "Try again"; btn.disabled = false; } app.insertAdjacentHTML("afterbegin", `<div class="card disruption" role="alert">${esc(e.message || "That action failed. Please try again.")}</div>`); }
 }
 window.TS = { openLink, callTool };
 
@@ -136,26 +160,34 @@ function render(result) {
         <div class="btns"><button onclick='TS.openLink(${JSON.stringify(h.googleHotelsUrl || "")})'>Details</button></div></div>`).join("") + `</div>`;
   } else if (kind === "demo-trip" || kind === "provider-fallback" || kind === "demo-rescue") {
     const moneyEur = n => `€${Number(n || 0).toLocaleString("en-IE")}`;
-    const renderTrip = (trip, label) => `<section class="card trip-card"><div class="badge">${label}</div>
-      <div class="row"><span class="strong">${trip.days} days · ${trip.travelers} travelers</span><span>Budget ${moneyEur(trip.budget)}</span></div>
-      <div class="grid">${Object.entries(trip.costBreakdown || {}).map(([key, val]) => `<div class="row"><span>${esc(key.replace(/[A-Z]/g, m => " " + m).replace(/^./, c => c.toUpperCase()))}</span><span>${moneyEur(val)}</span></div>`).join("")}</div>
-      <details class="assumptions"><summary>How the simulated costs are estimated</summary><ul>${Object.values(trip.costAssumptions || {}).map(x => `<li>${esc(x)}</li>`).join("")}</ul></details>
-      <div class="row"><span class="strong">Estimated trip total</span><span class="strong">${moneyEur(trip.estimatedTotal)}</span></div>
-      <div class="row"><span>Budget remaining</span><span>${moneyEur(trip.remainingBudget)}</span></div>
-      <div class="row"><span>Estimated local travel</span><span>${trip.estimatedTravelMinutes} min</span></div>
-      <details class="itinerary-detail"><summary>View ${trip.days}-day itinerary</summary>${(trip.itinerary.days || []).map(dayPlan => `<div class="sub"><b>Day ${dayPlan.day}</b> · ${(dayPlan.stops || []).map(s => `${esc(s.start)} ${esc(s.name)} (${moneyEur(s.cost)})`).join(" · ") || "No remaining stops"}</div>`).join("")}</details></section>`;
+    const stopsFor = trip => (trip.itinerary.days || []).flatMap(dayPlan => dayPlan.stops || []);
+    const renderTrip = (trip, label, key, changed = new Set()) => {
+      const panels = (trip.itinerary.days || []).map(dayPlan => `<section class="day-panel" id="${key}-day-${dayPlan.day}" role="tabpanel" tabindex="0" aria-labelledby="${key}-tab-${dayPlan.day}" ${dayPlan.day > 1 ? "hidden" : ""}>
+        ${(dayPlan.stops || []).length ? dayPlan.stops.map(s => `<article class="activity ${changed.has(s.name) ? "changed" : ""}"><div class="activity-time">${esc(s.start)}–${esc(s.end)}</div><div><h3>${esc(s.name)}</h3><p>${esc(s.area)} · ${s.travelMinutes} min travel · ${s.minutes} min visit</p><p>${esc(s.reason)}</p>${changed.has(s.name) ? `<div class="change-note">${key === "before" ? "Replaced after the simulated closure." : "Added as an interest-matched replacement."}</div>` : ""}</div><div class="activity-cost">${moneyEur(s.cost)}</div></article>`).join("") : `<div class="empty">No activities fit this day and budget.</div>`}
+        </section>`).join("");
+      return `<section class="card trip-card" aria-label="${label} itinerary"><div class="badge">${label}</div>
+        <div class="eyebrow">${trip.days} days · ${trip.travelers} travelers</div><div class="row"><span>Estimated total</span><span class="strong">${moneyEur(trip.estimatedTotal)}</span></div>
+        <div class="row"><span>Budget remaining</span><span class="strong">${moneyEur(trip.remainingBudget)} of ${moneyEur(trip.budget)}</span></div>
+        <div class="row"><span>Local travel estimate</span><span class="strong">${trip.estimatedTravelMinutes} min</span></div>
+        <details class="assumptions"><summary>Cost breakdown & assumptions</summary><ul>${Object.entries(trip.costBreakdown || {}).map(([key, val]) => `<li>${esc(key.replace(/[A-Z]/g, m => " " + m).replace(/^./, c => c.toUpperCase()))}: ${moneyEur(val)}</li>`).join("")}</ul><p>${Object.values(trip.costAssumptions || {}).map(esc).join(" · ")}</p></details>
+        <nav class="day-nav" role="tablist" aria-label="${label} itinerary days">${(trip.itinerary.days || []).map(dayPlan => `<button type="button" role="tab" id="${key}-tab-${dayPlan.day}" tabindex="${dayPlan.day === 1 ? 0 : -1}" aria-selected="${dayPlan.day === 1}" aria-controls="${key}-day-${dayPlan.day}" data-day-group="${key}" data-day="${dayPlan.day}">Day ${dayPlan.day}</button>`).join("")}</nav>${panels}</section>`;
+    };
     if (kind === "demo-rescue") {
       const dc = d.changes || {};
       const changeLabel = (value, unit, lower, higher) => value === 0 ? `unchanged (${unit === "€" ? "€0" : "0 min"})` : `${unit === "€" ? "€" + Math.abs(value) : Math.abs(value) + " min"} ${value < 0 ? lower : higher}`;
-      html += `<div class="card"><div class="badge">SIMULATED DISRUPTION</div><div class="strong">${esc(d.disruption)}</div>
-        <div class="row"><span>Estimated trip total</span><span>${moneyEur(d.before.estimatedTotal)} → ${moneyEur(d.after.estimatedTotal)} (${changeLabel(dc.estimatedCostDelta, "€", "less", "more")})</span></div>
-        <div class="row"><span>Budget remaining</span><span>${moneyEur(d.before.remainingBudget)} → ${moneyEur(d.after.remainingBudget)} (${changeLabel(dc.remainingBudgetDelta, "€", "less", "more")})</span></div>
-        <div class="row"><span>Estimated local travel</span><span>${d.before.estimatedTravelMinutes} → ${d.after.estimatedTravelMinutes} min (${changeLabel(dc.travelMinutesDelta, "min", "fewer", "more")})</span></div>
-        <div class="sub">${esc(d.dataLabel || "")}</div></div>`;
-      html += `<div class="comparison-trips">${renderTrip(d.before, "BEFORE")}${renderTrip(d.after, "AFTER REPLAN")}</div>`;
+      const beforeNames = new Set(stopsFor(d.before).map(s => s.name));
+      const afterNames = new Set(stopsFor(d.after).map(s => s.name));
+      const removed = new Set([...beforeNames].filter(name => !afterNames.has(name)));
+      const added = new Set([...afterNames].filter(name => !beforeNames.has(name)));
+      html += `<div class="card disruption"><div class="eyebrow">Simulated disruption</div><h2>${esc(d.disruption)}</h2><div class="sub">RoamReady removed the unavailable stop and rebuilt the affected plan around your interests. No live venue status is connected.</div>
+        <div class="metrics"><div class="metric"><span>Estimated trip total</span><strong>${moneyEur(d.before.estimatedTotal)} → ${moneyEur(d.after.estimatedTotal)}<br><em>${changeLabel(dc.estimatedCostDelta, "€", "less", "more")}</em></strong></div>
+        <div class="metric"><span>Budget remaining</span><strong>${moneyEur(d.before.remainingBudget)} → ${moneyEur(d.after.remainingBudget)}<br><em>${changeLabel(dc.remainingBudgetDelta, "€", "less", "more")}</em></strong></div>
+        <div class="metric"><span>Estimated local travel</span><strong>${d.before.estimatedTravelMinutes} → ${d.after.estimatedTravelMinutes} min<br><em>${changeLabel(dc.travelMinutesDelta, "min", "fewer", "more")}</em></strong></div></div>
+        <p class="data-note">${esc(d.dataLabel || "Illustrative estimates only.")}</p></div>`;
+      html += `<div class="comparison-trips">${renderTrip(d.before, "Original plan", "before", removed)}${renderTrip(d.after, "Revised plan", "after", added)}</div>`;
     } else {
       if (kind === "provider-fallback") html += `<div class="card"><div class="badge">SIMULATED PROVIDER FAILURE · RECOVERED OFFLINE</div><div>${esc(d.failure || "Provider unavailable")}</div></div>`;
-      html += renderTrip(d, "SIMULATED TRIP ESTIMATE");
+      html += renderTrip(d, "SIMULATED TRIP ESTIMATE", "trip");
     }
     html += `<div class="sub">${esc(d.dataLabel || "All values are illustrative estimates, not live availability or quotes.")}</div>`;
   } else if (kind === "itinerary" || kind === "rescue") {
@@ -179,6 +211,22 @@ function render(result) {
   }
   if (d.steps && d.steps.length) html += `<ul class="steps">` + d.steps.map(s => `<li>${esc(s)}</li>`).join("") + `</ul>`;
   app.innerHTML = html;
+  app.querySelectorAll("[data-day-group]").forEach(tab => {
+    const selectDay = () => {
+    const group = tab.dataset.dayGroup, selected = tab.dataset.day;
+    app.querySelectorAll(`[data-day-group="${group}"]`).forEach(button => { button.setAttribute("aria-selected", String(button === tab)); button.tabIndex = button === tab ? 0 : -1; });
+    app.querySelectorAll(`[id^="${group}-day-"]`).forEach(panel => { panel.hidden = panel.id === `${group}-day-${selected}` ? false : true; });
+    };
+    tab.addEventListener("click", selectDay);
+    tab.addEventListener("keydown", event => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const groupTabs = [...app.querySelectorAll(`[data-day-group="${tab.dataset.dayGroup}"]`)];
+      const index = groupTabs.indexOf(tab);
+      const next = event.key === "Home" ? 0 : event.key === "End" ? groupTabs.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + groupTabs.length) % groupTabs.length;
+      groupTabs[next].focus(); groupTabs[next].click();
+    });
+  });
 }
 
 // size reporting for flexible containers

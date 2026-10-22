@@ -63,28 +63,29 @@ def rescue_itinerary(days=3,budget=120,interests=None,accessible=False,disruptio
 DEMO_BASE_COSTS = {"airfare": 620, "lodging": 480, "meals": 280, "localTransport": 80}
 
 
-def build_demo_trip(days=4, total_budget=1800, travelers=2, interests=None, unavailable=None):
+def build_demo_trip(days=4, total_budget=1800, travelers=2, interests=None, unavailable=None, accessible=False):
     """Offline, fully labeled illustrative trip estimate for the repeatable judging demo."""
     days = max(1, min(int(days), 7))
     travelers = max(1, min(int(travelers), 8))
     budget = max(0.0, float(total_budget))
     fixed = dict(DEMO_BASE_COSTS)
     activity_cap = max(0.0, budget - sum(fixed.values()))
-    itinerary = build_itinerary(days, activity_cap, interests, unavailable=unavailable, party_size=travelers)
+    itinerary = build_itinerary(days, activity_cap, interests, accessible, unavailable, travelers)
     breakdown = {**fixed, "activities": itinerary["estimatedActivityCost"]}
     total = sum(breakdown.values())
     return {"kind":"demo-trip", "destination":"Barcelona", "days":days, "travelers":travelers,
             "currency":"EUR", "budget":budget, "costBreakdown":breakdown, "estimatedTotal":total,
             "remainingBudget":round(budget-total, 2), "itinerary":itinerary,
+            "accessibilityFilter":accessible,
             "estimatedTravelMinutes":itinerary["estimatedTravelMinutes"],
             "costAssumptions":{"airfare":"€620 round-trip estimate for two travelers","lodging":"€160/night × 3 nights","meals":"€70/day × 4 days for two","localTransport":"€40 per traveler for the trip","activities":"Illustrative admission estimates multiplied by traveler count"},
             "dataLabel":"SIMULATED ESTIMATES — airfare, lodging, meals, local transport, ticket costs, hours and routing are illustrative, not live prices or availability."}
 
 
-def rescue_demo_trip(days=4, total_budget=1800, travelers=2, interests=None, disruption="Sagrada Família closure"):
-    before = build_demo_trip(days, total_budget, travelers, interests)
+def rescue_demo_trip(days=4, total_budget=1800, travelers=2, interests=None, disruption="Sagrada Família closure", accessible=False):
+    before = build_demo_trip(days, total_budget, travelers, interests, accessible=accessible)
     blocked = ["Sagrada Família"] if "sagrada" in disruption.lower() else ["outdoors", "Park Güell", "Barceloneta waterfront", "Montjuïc gardens"]
-    after = build_demo_trip(days, total_budget, travelers, interests, blocked)
+    after = build_demo_trip(days, total_budget, travelers, interests, blocked, accessible)
     return {"kind":"demo-rescue", "disruption":disruption, "simulated":True, "before":before, "after":after,
             "removedStops":blocked, "changes":{"estimatedCostDelta":after["estimatedTotal"]-before["estimatedTotal"],
             "remainingBudgetDelta":after["remainingBudget"]-before["remainingBudget"],

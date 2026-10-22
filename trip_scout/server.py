@@ -71,22 +71,30 @@ async def plan_local_itinerary(ctx: Context, days: int = 3, activity_budget: flo
 
 
 @mcp.tool(title="Plan the Barcelona demo trip", meta=UI_META, annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=False))
-async def plan_demo_trip(ctx: Context, days: int = 4, travelers: int = 2, trip_budget_eur: float = 1800,
-                         interests: list[str] | None = None) -> CallToolResult:
+async def plan_demo_trip(ctx: Context, days: int = 4, travelers: int = 2, trip_budget_eur: float | None = None,
+                         interests: list[str] | None = None, step_free_access: bool | None = None) -> CallToolResult:
     """Build a reproducible four-day Barcelona demo for two travelers with a strict total EUR budget. ALL prices, hours and travel times are simulated estimates, never live quotes."""
+    profile = store.get_profile(_user(ctx))
+    trip_budget_eur = profile.get("tripBudgetEUR", 1800) if trip_budget_eur is None else trip_budget_eur
+    interests = profile.get("interests") if interests is None else interests
+    step_free_access = profile.get("stepFreeAccess", False) if step_free_access is None else step_free_access
     if days < 1 or days > 7 or travelers < 1 or travelers > 8 or trip_budget_eur < 0 or trip_budget_eur > 100000:
         return _error("Choose 1–7 days, 1–8 travelers and a non-negative EUR trip budget.")
-    data = build_demo_trip(days, trip_budget_eur, travelers, interests)
+    data = build_demo_trip(days, trip_budget_eur, travelers, interests, accessible=step_free_access)
     return _result(f"I built a {days}-day Barcelona estimate for {travelers} travelers: €{data['estimatedTotal']:.0f} of the €{trip_budget_eur:.0f} budget. This entire demo cost breakdown is simulated, not a live quote.", data)
 
 
 @mcp.tool(title="Replan the Barcelona demo after a disruption", meta=UI_META, annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=False))
 async def rescue_demo_trip_tool(ctx: Context, days: int = 4, travelers: int = 2, trip_budget_eur: float = 1800,
-                               interests: list[str] | None = None, disruption: str = "Sagrada Família closure") -> CallToolResult:
+                               interests: list[str] | None = None, disruption: str = "Sagrada Família closure",
+                               step_free_access: bool | None = None) -> CallToolResult:
     """Show before/after Barcelona itineraries and transparent estimated cost/time deltas after a simulated closure or weather disruption."""
     if days < 1 or days > 7 or travelers < 1 or travelers > 8 or trip_budget_eur < 0 or trip_budget_eur > 100000:
         return _error("Choose 1–7 days, 1–8 travelers and a non-negative EUR trip budget.")
-    data = rescue_demo_trip(days, trip_budget_eur, travelers, interests, disruption)
+    profile = store.get_profile(_user(ctx))
+    interests = profile.get("interests") if interests is None else interests
+    step_free_access = profile.get("stepFreeAccess", False) if step_free_access is None else step_free_access
+    data = rescue_demo_trip(days, trip_budget_eur, travelers, interests, disruption, step_free_access)
     before, after, delta = data["before"], data["after"], data["changes"]
     travel_delta = delta["travelMinutesDelta"]
     travel_change = ("estimated travel time is unchanged" if travel_delta == 0 else
@@ -99,14 +107,14 @@ async def rescue_demo_trip_tool(ctx: Context, days: int = 4, travelers: int = 2,
 
 @mcp.tool(title="Simulate a provider outage and recover offline", meta=UI_META, annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=False))
 async def simulate_provider_failure(ctx: Context, days: int = 4, travelers: int = 2, trip_budget_eur: float = 1800,
-                                    interests: list[str] | None = None) -> CallToolResult:
+                                    interests: list[str] | None = None, step_free_access: bool = False) -> CallToolResult:
     """Inject a local simulated provider 503, then recover with the offline demo planner. Makes no network requests; all returned costs are simulated."""
     if days < 1 or days > 7 or travelers < 1 or travelers > 8 or trip_budget_eur < 0 or trip_budget_eur > 100000:
         return _error("Choose 1–7 days, 1–8 travelers and a non-negative EUR trip budget.")
     try:
         raise RuntimeError("Injected simulated 503 provider outage")
     except RuntimeError as exc:
-        data = build_demo_trip(days, trip_budget_eur, travelers, interests)
+        data = build_demo_trip(days, trip_budget_eur, travelers, interests, accessible=step_free_access)
         data.update(kind="provider-fallback", providerStatus="simulated failure", failure=str(exc), recoveredOffline=True)
         return _result("The flight data provider is simulating an outage. I recovered using the offline Barcelona estimate; costs and availability are illustrative.", data)
 
@@ -165,7 +173,9 @@ def view() -> str:
 @mcp.tool(title="Save travel preferences", annotations=ToolAnnotations(readOnlyHint=False, idempotentHint=True, openWorldHint=False))
 async def set_travel_profile(ctx: Context, home_airport: str | None = None, currency: str | None = None, adults: int | None = None,
                              children: int | None = None, cabin_class: str | None = None, nonstop_only: bool | None = None,
-                             min_hotel_rating: float | None = None, hotel_stars: list[int] | None = None) -> CallToolResult:
+                             min_hotel_rating: float | None = None, hotel_stars: list[int] | None = None,
+                             trip_budget_eur: float | None = None, interests: list[str] | None = None,
+                             step_free_access: bool | None = None) -> CallToolResult:
     """Remember the traveler's home airport and preferences so they never have to repeat them.
     cabin_class: economy | premium_economy | business | first. hotel_stars e.g. [4, 5]."""
     changes = {}
@@ -188,6 +198,18 @@ async def set_travel_profile(ctx: Context, home_airport: str | None = None, curr
         changes["minHotelRating"] = float(min_hotel_rating)
     if hotel_stars is not None:
         changes["hotelClasses"] = [int(s) for s in hotel_stars]
+    if trip_budget_eur is not None:
+        if trip_budget_eur < 0 or trip_budget_eur > 100000:
+            return _error("Choose a EUR trip budget from 0 to 100,000.")
+        changes["tripBudgetEUR"] = float(trip_budget_eur)
+    if interests is not None:
+        allowed = {"architecture", "art", "food", "history", "outdoors"}
+        normalized = list(dict.fromkeys(str(item).lower() for item in interests))
+        if not normalized or any(item not in allowed for item in normalized):
+            return _error("Choose one or more supported interests: architecture, art, food, history or outdoors.")
+        changes["interests"] = normalized
+    if step_free_access is not None:
+        changes["stepFreeAccess"] = bool(step_free_access)
     prof = store.update_profile(_user(ctx), **changes)
     home = places.label(prof["homeAirport"]) if prof["homeAirport"] else "not set"
     speech = f"Got it. Home airport {home}, {prof['adults']} adult{'s' if prof['adults'] > 1 else ''}, {prof['cabinClass'].replace('_', ' ')}" + \
@@ -215,6 +237,27 @@ async def list_saved_trips(ctx: Context, limit: int = 10) -> CallToolResult:
     """Show the current user's saved trip summaries so they can inspect what travel memory is stored."""
     trips = store.list_trips(_user(ctx), max(1, min(int(limit), 25)))
     return _result(f"I found {len(trips)} saved trip{'s' if len(trips) != 1 else ''}.", {"kind":"memory","title":"Saved trips","trips":trips})
+
+
+@mcp.tool(title="Save demo trip", annotations=ToolAnnotations(readOnlyHint=False, idempotentHint=False, openWorldHint=False))
+async def save_demo_trip_tool(ctx: Context, trip: dict) -> CallToolResult:
+    """Save a completed Barcelona demo estimate to the current user's SQLite travel memory."""
+    if not isinstance(trip, dict) or trip.get("kind") != "demo-trip" or trip.get("destination") != "Barcelona":
+        return _error("Only a completed Barcelona demo trip can be saved.")
+    if not isinstance(trip.get("itinerary"), dict) or not isinstance(trip.get("costBreakdown"), dict):
+        return _error("The demo trip is incomplete and could not be saved.")
+    trip_id = store.save_trip(_user(ctx), "Barcelona · demo trip", trip)
+    saved = next((item for item in store.list_trips(_user(ctx)) if item["id"] == trip_id), None)
+    return _result("Saved the Barcelona demo estimate to your travel memory.",
+                   {"kind":"saved-trip","title":"Trip saved","trip":saved})
+
+
+@mcp.tool(title="Delete one saved trip", annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=True, openWorldHint=False))
+async def delete_saved_trip_tool(ctx: Context, trip_id: str) -> CallToolResult:
+    """Delete one saved trip by its identifier, leaving the profile and other trips unchanged."""
+    if not store.delete_trip(_user(ctx), trip_id):
+        return _error("That saved trip was not found. Refresh the list and try again.")
+    return _result("Deleted the selected saved trip.", {"kind":"memory","deletedTripId":trip_id})
 
 
 # ------------------------------------------------------------------ search

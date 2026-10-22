@@ -48,7 +48,7 @@ set -a; source .env; set +a               # PowerShell users can set the variabl
 python run_demo.py --no-browser
 ```
 
-Open **http://127.0.0.1:8770**. `ROAMREADY_DEMO_MODE=1` is set in the example environment: turns use deterministic local intent routing and do not call an external LLM. Choose **Reset demo** before recording to delete the demo user's saved profile/trips/watches and clear the conversation. The reset is scoped to the current browser user.
+Open **http://127.0.0.1:8770**. `ROAMREADY_DEMO_MODE=1` is set in the example environment: turns use deterministic local intent routing and do not call an external LLM. In **Demo & help**, choose **Reset demo session** to clear the current conversation and generated comparison while preserving saved preferences and trips. The separate **Forget all travel memory** action permanently deletes the current demo user's profile, saved trips and watches.
 
 Type or say:
 
@@ -56,7 +56,7 @@ Type or say:
 2. `Sagrada Família is closed; replan the trip`
 3. `Simulate a flight provider failure and recover offline`
 
-The flow calls the MCP backend for each request and renders each `structuredContent` result. The failure is injected locally, so it makes no provider request.
+The flow calls the MCP backend for each request and renders each `structuredContent` result. The failure is injected locally, so it makes no provider request. Web assets, including the CC0 hero image attribution, are documented in [web/static/ASSETS.md](web/static/ASSETS.md).
 
 ## Configuration
 
@@ -85,10 +85,16 @@ The custom MCP tool set includes `plan_demo_trip`, `rescue_demo_trip_tool`, `sim
 Install the requirements above, then run:
 
 ```sh
-python -m pytest -q tests/test_units.py tests/test_roamready_mcp.py
+python -m pytest -q tests/test_units.py tests/test_roamready_mcp.py tests/test_web_reset.py
 ```
 
-The clean Python 3.14.8 environment passed **16 tests with no warnings** (unit tests, mocked provider success/503 tests, and Streamable HTTP MCP integration). The live provider smoke script `tests/smoke_mcp.py` is deliberately not part of the safe test command because it sends real outbound search requests; mock coverage is used instead.
+The verified local environment passed **19 tests** with:
+
+```sh
+python -m pytest -q tests/test_units.py tests/test_roamready_mcp.py tests/test_web_reset.py
+```
+
+Coverage includes unit and planner constraints, mocked provider success/503 behavior, Streamable HTTP MCP integration, stored trip deletion, accessibility filtering, and web session reset behavior. The live provider smoke script `tests/smoke_mcp.py` is deliberately not part of the safe test command because it sends real outbound search requests; mock coverage is used instead. The dashboard JavaScript also passed `node --check web/static/app.js`.
 
 See [docs/FINAL_AUDIT.md](docs/FINAL_AUDIT.md) for exact commands, protocol handshake, end-to-end checks, secret scan and limitations.
 

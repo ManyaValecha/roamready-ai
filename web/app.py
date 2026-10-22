@@ -27,6 +27,7 @@ from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import FileResponse, JSONResponse
 from starlette.routing import Route
+from starlette.staticfiles import StaticFiles
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -126,6 +127,8 @@ def fallback_intent(text):
     travelers_match = re.search(r"\b(\d+)\s+(?:people|travelers|travellers|adults)\b", t)
     demo_args = {"days": nights or 4, "travelers": int(travelers_match.group(1)) if travelers_match else 2,
                  "trip_budget_eur": budget or 1800, "interests": interest_values or ["architecture", "art", "food", "history", "outdoors"]}
+    if re.search(r"\b(step[- ]free|wheelchair|accessible)\b", t):
+        demo_args["step_free_access"] = True
     if re.search(r"\b(simulate|provider|outage|offline fallback)\b", t) and re.search(r"\b(fail|failure|outage|unavailable)\b", t):
         return "simulate_provider_failure", demo_args
     if "barcelona" in t and re.search(r"\b(plan|build|create)\b", t) and ("€" in text or "budget" in t or "trip" in t):
@@ -237,6 +240,13 @@ async def index(request):
     return FileResponse(os.path.join(HERE, "static", "index.html"))
 
 
+async def app_view(request: Request):
+    uid = (request.headers.get("x-user-id") or "demo-user")[:64]
+    async def go(s):
+        return (await s.read_resource("ui://roamready-ai/view.html")).contents[0].text
+    return JSONResponse({"html": await mcp_call(uid, go)})
+
+
 async def chat(request: Request):
     body = await request.json()
     sid = body.get("session_id") or uuid.uuid4().hex
@@ -249,10 +259,10 @@ async def chat(request: Request):
 async def reset(request: Request):
     body = await request.json()
     sid = body.get("session_id")
-    uid = (body.get("user_id") or "demo-user")[:64]
     if sid:
         SESSIONS.pop(sid, None); LAST.pop(sid, None); DEMO_TRIPS.pop(sid, None)
-    await mcp_call(uid, lambda s: s.call_tool("forget_travel_memory", {}))
+    # Reset the conversation only. Persistent profile, saved trips and watches
+    # have a separate explicit forget action and must not be deleted implicitly.
     return JSONResponse({"reset": True})
 
 
@@ -264,7 +274,8 @@ async def tool(request: Request):
     return JSONResponse(res.model_dump(mode="json", exclude_none=True))
 
 
-app = Starlette(routes=[Route("/", index), Route("/api/chat", chat, methods=["POST"]), Route("/api/tool", tool, methods=["POST"]), Route("/api/reset", reset, methods=["POST"])])
+app = Starlette(routes=[Route("/", index), Route("/api/view", app_view), Route("/api/chat", chat, methods=["POST"]), Route("/api/tool", tool, methods=["POST"]), Route("/api/reset", reset, methods=["POST"])])
+app.mount("/static", StaticFiles(directory=os.path.join(HERE, "static")), name="static")
 
 if __name__ == "__main__":
     import uvicorn
