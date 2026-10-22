@@ -1,0 +1,16 @@
+.git/
+.vercel/
+.env*
+.venv/
+node_modules/
+__pycache__/
+.pytest_cache/
+tests/
+*.db
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.json
+.DS_Store
