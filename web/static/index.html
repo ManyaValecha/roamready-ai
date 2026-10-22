@@ -52,15 +52,43 @@
           <button type="button" class="button button-primary" data-page="planner"><span aria-hidden="true">＋</span> Plan a trip</button>
         </div>
 
-        <article class="destination-hero">
+        <article class="destination-hero" data-depth-scene>
           <img src="/static/barcelona-sagrada.jpg" alt="Barcelona rooftops and the Sagrada Família seen from Parc Güell">
           <div class="destination-scrim"></div>
+          <span class="hero-orbit hero-orbit-one" aria-hidden="true"></span><span class="hero-orbit hero-orbit-two" aria-hidden="true"></span>
           <div class="destination-copy"><span class="image-kicker">YOUR DEMO DESTINATION</span><h2>Barcelona, with room to wander.</h2>
             <p>Four days for two travelers. Architecture, art and local food, planned around a €1,800 ceiling.</p>
             <button type="button" class="button button-light" data-plan-demo>Explore the demo trip <span aria-hidden="true">→</span></button>
           </div>
+          <div class="hero-stamp" aria-label="Four days, two travelers, Barcelona"><span>04</span><small>DAYS<br>IN THE CITY</small><i></i><span>02</span><small>TRAVELERS</small></div>
           <a class="image-credit" href="https://commons.wikimedia.org/wiki/File:Sagrada_Fam%C3%ADlia,_Barcelona.jpg" target="_blank" rel="noreferrer">Photo: Julian Lupyan · CC0</a>
         </article>
+
+        <section class="journey-story" aria-labelledby="journey-story-title">
+          <div class="journey-story-copy">
+            <div class="eyebrow">A BETTER KIND OF ITINERARY</div>
+            <h2 id="journey-story-title">A trip should bend before it breaks.</h2>
+            <p class="journey-story-intro">Follow the plan through a simulated closure. Then run Smart Rescue to see the actual MCP-generated revision and its cost and travel-time changes.</p>
+            <ol class="journey-steps" aria-label="How RoamReady adapts a trip">
+              <li class="journey-step is-active" data-story-step="0"><span class="journey-step-index">01</span><div><strong>Start with what matters</strong><small>Build a Barcelona plan around your interests and budget.</small></div></li>
+              <li class="journey-step" data-story-step="1"><span class="journey-step-index">02</span><div><strong>Plans change</strong><small>Introduce a clearly labeled simulated landmark closure.</small></div></li>
+              <li class="journey-step" data-story-step="2"><span class="journey-step-index">03</span><div><strong>Keep the day moving</strong><small>Compare the original plan with a tool-generated recovery.</small></div></li>
+            </ol>
+            <button type="button" class="button button-primary journey-cta" data-page="rescue">See Smart Rescue <span aria-hidden="true">→</span></button>
+          </div>
+          <div class="journey-stage" aria-label="Illustration of an itinerary adapting to a simulated disruption">
+            <div class="journey-stage-glow" aria-hidden="true"></div>
+            <div class="journey-photo-card" data-story-photo>
+              <img src="/static/barcelona-sagrada.jpg" alt="" loading="lazy">
+              <span class="journey-photo-label">BARCELONA · FOUR-DAY DEMO</span>
+              <div class="journey-route" aria-hidden="true"><span></span><i></i><span></span><i></i><span></span></div>
+            </div>
+            <div class="journey-note journey-note-plan is-active" data-story-card="0"><span class="journey-note-label">YOUR PLAN</span><strong>Made around your interests</strong><span class="journey-note-line"><i></i>Day-by-day itinerary</span></div>
+            <div class="journey-note journey-note-change" data-story-card="1"><span class="journey-note-label">SIMULATED DISRUPTION</span><strong>A landmark closes</strong><span class="journey-note-line"><i></i>See what changes</span></div>
+            <div class="journey-note journey-note-rescue" data-story-card="2"><span class="journey-note-label">SMART RESCUE</span><strong>Replan with the tradeoffs in view</strong><span class="journey-note-line"><i></i>Compare cost + travel time</span></div>
+            <div class="journey-stage-caption"><span class="stage-caption-dot"></span> Scroll story preview <span>·</span> actual estimates appear in Smart Rescue</div>
+          </div>
+        </section>
 
         <div class="section-heading"><div><div class="eyebrow">TRAVEL AT A GLANCE</div><h2>Your travel snapshot</h2></div><button type="button" class="text-link" data-page="trips">View saved trips <span aria-hidden="true">→</span></button></div>
         <div class="snapshot-grid">
@@ -146,6 +174,8 @@
       <footer class="app-footer"><span>ROAMREADY · LOCAL DEMO</span><span>Illustrative estimates · not live availability</span></footer>
     </main>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js" defer></script>
   <script src="/static/app.js" defer></script>
 </body>
 </html>

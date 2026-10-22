@@ -160,7 +160,10 @@ flowchart LR
 | ASGI server | Uvicorn |
 | Persistence | SQLite |
 | Frontend | HTML, CSS, JavaScript |
+| Motion | GSAP 3.15 + ScrollTrigger (version-pinned CDN, with a static fallback; [license](https://gsap.com/standard-license/)) |
 | Tests | pytest |
+
+The overview's scroll-linked 3D itinerary story uses the locally stored, attributed Barcelona photograph listed in [`web/static/ASSETS.md`](web/static/ASSETS.md). It does not include a Veo 3-generated video; the UI labels the sequence as a story preview and directs users to Smart Rescue for actual MCP-generated itinerary results.
 
 ### Alexa+ track scope
 

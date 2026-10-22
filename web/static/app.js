@@ -8,6 +8,37 @@
   let profile = null, savedTrips = [], activePlan = null, activeRescue = null, viewHtml = '', hostedDemo = false;
   const frames = new Map();
 
+  function initJourneyMotion() {
+    const story = $('.journey-story');
+    const gsap = window.gsap;
+    const trigger = window.ScrollTrigger;
+    if (!story || !gsap || !trigger || matchMedia('(prefers-reduced-motion: reduce)').matches || matchMedia('(max-width: 780px)').matches) return;
+    gsap.registerPlugin(trigger);
+    const photo = $('[data-story-photo]');
+    const cards = $$('[data-story-card]', story);
+    const steps = $$('[data-story-step]', story);
+    if (!photo || cards.length !== 3 || steps.length !== 3) return;
+
+    gsap.set(cards, {autoAlpha:0, x:28, rotateY:-8, scale:.97, transformPerspective:900});
+    gsap.set(cards[0], {autoAlpha:1, x:0, rotateY:-3, scale:1});
+    const updateActive = progress => {
+      const current = Math.min(2, Math.floor(progress * 3));
+      steps.forEach((step, i) => step.classList.toggle('is-active', i === current));
+    };
+    const timeline = gsap.timeline({
+      scrollTrigger:{
+        trigger:story, start:'top top+=85', end:'bottom bottom', scrub:.7,
+        onUpdate:self=>updateActive(self.progress)
+      }
+    });
+    timeline.to(photo, {rotateY:5, rotateX:-1, rotateZ:1, x:-14, scale:1.045, ease:'none'}, .06)
+      .to(cards[0], {autoAlpha:0, x:25, rotateY:9, scale:.96, ease:'none'}, .29)
+      .to(cards[1], {autoAlpha:1, x:0, rotateY:0, scale:1, ease:'none'}, .31)
+      .to(cards[1], {autoAlpha:0, x:25, rotateY:9, scale:.96, ease:'none'}, .61)
+      .to(cards[2], {autoAlpha:1, x:0, rotateY:0, scale:1, ease:'none'}, .63);
+    gsap.fromTo('.destination-copy > *', {y:16, autoAlpha:0}, {y:0, autoAlpha:1, duration:.72, stagger:.08, ease:'power2.out', clearProps:'transform'});
+  }
+
   function toast(message, error = false) {
     const el = $('#toast'); el.textContent = message; el.classList.toggle('toast-error', error); el.hidden = false;
     clearTimeout(toast.timer); toast.timer = setTimeout(() => { el.hidden = true; }, 4200);
@@ -181,4 +212,6 @@
     }
     return loadView();
   }).then(loadDashboard).catch(err=>toast(`MCP server unavailable: ${err.message}`,true));
+  if (document.readyState === 'complete') initJourneyMotion();
+  else window.addEventListener('load', initJourneyMotion, {once:true});
 })();
