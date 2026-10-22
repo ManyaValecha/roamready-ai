@@ -252,7 +252,7 @@ Avoid optional live-search and price-watch tools when testing offline.
 
 ## ⚙️ Configuration
 
-Configuration is documented in [`.env.example`](.env.example).
+
 
 | Variable | Description |
 |:--|:--|
