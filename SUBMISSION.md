@@ -9,7 +9,7 @@
 - **Demo video:** publicly viewable on YouTube or Vimeo, under 3:00, show the functioning project, and exclude third-party trademarks/copyrighted media unless rights are held.
 - **Optional fields:** feature requests and friction-log entries. The rules say friction logs can add up to 10% to judging; a factual, evidenced entry is drafted in [docs/FEEDBACK.md](docs/FEEDBACK.md). Do not copy it unless it matches the entrant's own experience.
 - **New/existing work:** if this project existed before the Submission Period began, rules require significant updates after August 31, 2026 and an explanation/demo of those changes. RoamReady updates made for this entry add the four-day constrained demo, personalized interests/party size, simulated total-budget breakdown, structured MCP disruption-rescue comparison, provider-failure fallback, reproducible reset, and tested simulator flow. The entrant should confirm project provenance/timing and describe the update truthfully.
-- **No AWS Builder claim:** no AWS service or Kiro Crew integration is present. No Open Source mini-challenge claim is prepared: no separate qualifying public-repository contribution during the window is documented.
+- **AWS Builder mini-challenge:** RoamReady includes an opt-in, documented Amazon Bedrock Chat Completions provider path in the simulator, using Bedrock's OpenAI-compatible `bedrock-runtime` endpoint. The request path is unit-tested without network access; live AWS credentials and an actual Bedrock invocation have not been verified. Before selecting the AWS Builder challenge, the entrant should configure their own Bedrock access, make and record one successful invocation, and ensure they accept any resulting charges. No Kiro Crew use is claimed. No Open Source mini-challenge claim is prepared: no separate qualifying public-repository contribution during the window is documented.
 - **No restricted access claims:** Alexa+ add-on tools are preview-only for select partners according to the FAQ; its guidance explicitly permits a self-built web MCP client. Hosting is not required. This project does not claim Alexa+ preview access, Amazon certification, Alexa device connection, public deployment, live travel quotes or bookings.
 
 Official references: [Devpost rules](https://amazonappdev2026.devpost.com/rules) · [Devpost FAQ](https://amazonappdev2026.devpost.com/details/faqs). Recheck both and the logged-in submission form immediately before filing.
@@ -38,7 +38,7 @@ The local browser simulator is an MCP client. It initializes a Streamable HTTP c
 
 **Built With**
 
-Python, MCP Python SDK / FastMCP, MCP Streamable HTTP, Starlette, Uvicorn, SQLite, HTML/CSS/JavaScript, pytest, and the MIT-licensed Trip Scout foundation. No AWS service or Alexa+ preview SDK was used.
+Python, MCP Python SDK / FastMCP, MCP Streamable HTTP, Starlette, Uvicorn, SQLite, HTML/CSS/JavaScript, pytest, the MIT-licensed Trip Scout foundation, and an optional Amazon Bedrock-compatible chat endpoint (live access unverified). No Alexa+ preview SDK was used.
 
 **Friction log**
 
@@ -57,7 +57,7 @@ Record to the 2:40 run-of-show in [DEMO.md](DEMO.md), publish publicly on YouTub
 - [ ] Record the working UI and MCP trace, publish video publicly to YouTube/Vimeo, and paste its URL.
 - [ ] Add current screenshots/media to Devpost; avoid presenting old package-result sample cards as live prices.
 - [ ] Fill Product Feedback from the entrant's actual experience and attach only factual friction entries.
-- [ ] Select Alexa+ primary track; select no mini-challenge unless eligibility is independently supported.
+- [ ] Select Alexa+ primary track. Select AWS Builder only after a real Bedrock invocation is verified and documented; otherwise leave it unselected. Do not select Open Source without a separate eligible contribution.
 - [ ] Complete title, project description, team/representative and any additional fields shown in the form.
 - [ ] Review all links and disclosures, submit, and retain the confirmation page/email.
 

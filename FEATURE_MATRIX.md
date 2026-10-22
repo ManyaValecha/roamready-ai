@@ -14,4 +14,8 @@
 | Confirmation / bookings | No booking implementation found | Search and watch tools only; no booking implementation found | No purchase/reservation tool; thus cannot claim a booking occurred |
 | Source license | No LICENSE file found in clone. Source not copied. It also contains hardcoded third-party credentials that were not copied. | MIT (`LICENSE`) | Includes Trip Scout MIT notice. RoamReady additions are original. |
 
+## Optional AWS provider
+
+The licensed Trip Scout source documents an optional Amazon Bedrock endpoint for its OpenAI-compatible simulator. RoamReady retains that HTTP request path and now exposes an explicit `LLM_PROVIDER=bedrock` configuration using Bedrock's documented `bedrock-runtime` Chat Completions endpoint and bearer API key. The request construction is tested with a network-free fake HTTP client; no AWS account credentials were available, so no live Bedrock call is claimed. It is disabled in deterministic demo mode unless the operator explicitly configures live model mode. The unlicensed Alexa Trip Planner clone had no AWS integration suitable for reuse.
+
 The originals were cloned separately under `work/originals/` and left unchanged. The older repository has vendored dependency source in its tree; it was not moved into the deliverable. Feature evidence was read from source files, not repository descriptions alone.

@@ -35,10 +35,7 @@ from starlette.staticfiles import StaticFiles
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 MCP_URL = os.environ.get("TRIP_SCOUT_MCP_URL", "http://127.0.0.1:8765/mcp")
-LLM_BASE = os.environ.get("LLM_BASE_URL", "https://text.pollinations.ai/openai").rstrip("/")
 DEMO_MODE = os.environ.get("ROAMREADY_DEMO_MODE", "1") == "1"
-LLM_KEY = os.environ.get("LLM_API_KEY", "")
-LLM_MODEL = os.environ.get("LLM_MODEL", "openai")
 MCP_TOKEN = os.environ.get("TRIP_SCOUT_TOKEN", "")
 PORT = int(os.environ.get("SIM_PORT", os.environ.get("PORT", "8770")))
 VERCEL_DEMO = os.environ.get("ROAMREADY_DEPLOYMENT_MODE") == "vercel"
@@ -92,12 +89,34 @@ def to_openai_tools(tools):
 
 
 # ------------------------------------------------------------------ LLM
+def llm_config():
+    """Resolve the optional chat provider without changing deterministic demo defaults."""
+    provider = os.environ.get("LLM_PROVIDER", "openai-compatible").strip().lower()
+    if provider == "bedrock":
+        region = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION")
+        if not region:
+            raise LLMError("Amazon Bedrock selected but AWS_REGION is not set")
+        base_url = os.environ.get(
+            "LLM_BASE_URL", f"https://bedrock-runtime.{region}.amazonaws.com/openai/v1"
+        )
+        api_key = os.environ.get("AWS_BEARER_TOKEN_BEDROCK") or os.environ.get("LLM_API_KEY", "")
+        if not api_key:
+            raise LLMError("Amazon Bedrock selected but AWS_BEARER_TOKEN_BEDROCK is not set")
+        model = os.environ.get("LLM_MODEL", "openai.gpt-oss-120b-1:0")
+    else:
+        base_url = os.environ.get("LLM_BASE_URL", "https://text.pollinations.ai/openai")
+        api_key = os.environ.get("LLM_API_KEY", "")
+        model = os.environ.get("LLM_MODEL", "openai")
+    return provider, base_url.rstrip("/"), api_key, model
+
+
 async def llm(messages, tools):
+    _, base_url, api_key, model = llm_config()
     headers = {"Content-Type": "application/json"}
-    if LLM_KEY:
-        headers["Authorization"] = f"Bearer {LLM_KEY}"
-    body = {"model": LLM_MODEL, "messages": messages, "tools": tools, "tool_choice": "auto", "temperature": 0.2}
-    url = LLM_BASE if LLM_BASE.endswith("/openai") or LLM_BASE.endswith("/completions") else LLM_BASE + "/chat/completions"
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    body = {"model": model, "messages": messages, "tools": tools, "tool_choice": "auto", "temperature": 0.2}
+    url = base_url if base_url.endswith("/openai") or base_url.endswith("/completions") else base_url + "/chat/completions"
     async with httpx.AsyncClient(timeout=httpx.Timeout(30, connect=10)) as c:
         for attempt in range(2):
             r = await c.post(url, headers=headers, json=body)

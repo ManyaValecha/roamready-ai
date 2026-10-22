@@ -98,6 +98,72 @@ def test_fallback_intents():
     assert fallback_intent("did any of my prices drop?")[0] == "check_price_watches"
 
 
+def test_bedrock_provider_config_is_explicit_and_requires_credentials(monkeypatch):
+    from web.app import LLMError, llm_config
+
+    monkeypatch.setenv("LLM_PROVIDER", "bedrock")
+    monkeypatch.delenv("AWS_REGION", raising=False)
+    monkeypatch.delenv("AWS_DEFAULT_REGION", raising=False)
+    monkeypatch.delenv("AWS_BEARER_TOKEN_BEDROCK", raising=False)
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    with pytest.raises(LLMError, match="AWS_REGION"):
+        llm_config()
+
+    monkeypatch.setenv("AWS_REGION", "eu-west-1")
+    with pytest.raises(LLMError, match="AWS_BEARER_TOKEN_BEDROCK"):
+        llm_config()
+
+    monkeypatch.setenv("AWS_BEARER_TOKEN_BEDROCK", "test-only-token")
+    assert llm_config() == (
+        "bedrock",
+        "https://bedrock-runtime.eu-west-1.amazonaws.com/openai/v1",
+        "test-only-token",
+        "openai.gpt-oss-120b-1:0",
+    )
+
+
+def test_bedrock_chat_request_uses_openai_compatible_endpoint_without_network(monkeypatch):
+    import asyncio
+    import httpx
+    from web.app import llm
+
+    captured = {}
+
+    class FakeResponse:
+        status_code = 200
+
+        @staticmethod
+        def json():
+            return {"choices": [{"message": {"content": "tool selected", "tool_calls": []}}]}
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            captured["timeout"] = kwargs["timeout"]
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def post(self, url, *, headers, json):
+            captured.update(url=url, headers=headers, body=json)
+            return FakeResponse()
+
+    monkeypatch.setattr("web.app.httpx.AsyncClient", FakeClient)
+    monkeypatch.setenv("LLM_PROVIDER", "bedrock")
+    monkeypatch.setenv("AWS_REGION", "eu-west-1")
+    monkeypatch.setenv("AWS_BEARER_TOKEN_BEDROCK", "test-only-token")
+    monkeypatch.setenv("LLM_MODEL", "openai.gpt-oss-120b-1:0")
+    result = asyncio.run(llm([{"role": "user", "content": "plan"}], [{"type": "function"}]))
+
+    assert result["content"] == "tool selected"
+    assert captured["url"] == "https://bedrock-runtime.eu-west-1.amazonaws.com/openai/v1/chat/completions"
+    assert captured["headers"]["Authorization"] == "Bearer test-only-token"
+    assert captured["body"]["model"] == "openai.gpt-oss-120b-1:0"
+    assert captured["body"]["tools"] == [{"type": "function"}]
+
+
 def test_roamready_itinerary_constraints_and_budget():
     from trip_scout.roamready import build_itinerary
     plan = build_itinerary(days=3, budget=30, interests=["art", "food"], accessible=True)

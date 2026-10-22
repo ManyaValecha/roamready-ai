@@ -291,8 +291,15 @@ Keep the application running while using the dashboard.
 | `LLM_BASE_URL` | Optional OpenAI-compatible chat endpoint. |
 | `LLM_API_KEY` | Optional LLM credential. |
 | `LLM_MODEL` | Optional model identifier. |
+| `LLM_PROVIDER` | Optional provider selector; set to `bedrock` to use Amazon Bedrock's OpenAI-compatible Chat Completions endpoint. |
+| `AWS_REGION` | Bedrock region used to construct the recommended `bedrock-runtime` endpoint when `LLM_BASE_URL` is unset. |
+| `AWS_BEARER_TOKEN_BEDROCK` | Optional Bedrock API key; never commit or paste it into issue trackers. |
 
 Never commit real API keys, tokens, or private environment files.
+
+### Optional Amazon Bedrock model provider
+
+The simulator contains an opt-in Amazon Bedrock Chat Completions integration. This is separate from the deterministic judging demo: normal setup leaves `ROAMREADY_DEMO_MODE=1`, which makes no model request. To opt in, use a Bedrock API key with model access and set `LLM_PROVIDER=bedrock`, `AWS_REGION`, and `AWS_BEARER_TOKEN_BEDROCK` in your local ignored `.env`; optionally set `LLM_MODEL` or `LLM_BASE_URL` for a compatible model/endpoint. Then set `ROAMREADY_DEMO_MODE=0` to enable the LLM host. A model invocation may incur AWS charges. Never commit `.env` or expose the bearer token. The request path is covered by a network-free unit test; no live Bedrock request or AWS account was available for this audit, so live service access is unverified. See the [AWS Chat Completions endpoint documentation](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-chat-completions.html).
 
 ---
 
@@ -304,7 +311,7 @@ Run the focused regression suite:
 python -m pytest -q tests/test_units.py tests/test_roamready_mcp.py tests/test_web_reset.py
 ```
 
-The local release-audit record reports **19 passing tests**. Run the command again on the current checkout to verify its present state.
+The 22 October 2026 Bedrock integration regression run reports **21 passing tests** for the command below. The live Bedrock service was not called; its request construction is tested with a fake HTTP client.
 
 Additional checks reported during the audit:
 
@@ -341,7 +348,7 @@ RoamReady AI is a hackathon prototype, not a live travel-booking service.
 - The simulated budget assumes €620 for round-trip airfare for two, €160 per night for three nights, €70 per day for four days of meals, and €40 per traveler for local transport.
 - Optional flight and hotel searches parse public Google Travel result pages. These are unofficial integrations, not official Google APIs; production-use terms have not been verified.
 - The offline demo does not verify live closures, opening hours, prices, or route durations.
-- No real Alexa+ device integration, restricted preview access, OAuth onboarding, Amazon certification, or AWS integration is claimed.
+- No real Alexa+ device integration, restricted preview access, OAuth onboarding, Amazon certification, or verified live AWS invocation is claimed. Amazon Bedrock is an optional, documented LLM endpoint; deterministic demo mode does not call it.
 - SQLite is single-node persistence. Multi-instance deployment would require a suitable shared-storage design.
 
 Do not use simulated results as the basis for real travel purchases or accessibility decisions.
