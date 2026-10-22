@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f4f2ec">
   <title>RoamReady — trip dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
@@ -47,7 +50,7 @@
 
       <section class="page-section active" id="page-overview" aria-labelledby="overview-title">
         <div class="welcome-row">
-          <div><div class="eyebrow" id="welcome-date">YOUR NEXT JOURNEY STARTS HERE</div><h1 id="overview-title">Make room for the unexpected.</h1>
+          <div><div class="eyebrow" id="welcome-date">YOUR NEXT JOURNEY STARTS HERE</div><h1 id="overview-title">Make room for<br><em>the unexpected.</em></h1>
             <p class="lead">Plan a thoughtful Barcelona escape, then see how your itinerary can adapt when plans change.</p></div>
           <button type="button" class="button button-primary" data-page="planner"><span aria-hidden="true">＋</span> Plan a trip</button>
         </div>
@@ -60,7 +63,10 @@
             <p>Four days for two travelers. Architecture, art and local food, planned around a €1,800 ceiling.</p>
             <button type="button" class="button button-light" data-plan-demo>Explore the demo trip <span aria-hidden="true">→</span></button>
           </div>
-          <div class="hero-stamp" aria-label="Four days, two travelers, Barcelona"><span>04</span><small>DAYS<br>IN THE CITY</small><i></i><span>02</span><small>TRAVELERS</small></div>
+          <svg class="hero-flight-path" viewBox="0 0 440 300" fill="none" aria-hidden="true"><path d="M28 252C66 222 72 155 129 163C196 174 201 242 269 207C331 176 323 77 405 33" stroke="white" stroke-opacity=".74" stroke-width="1.5" stroke-dasharray="3 9" stroke-linecap="round"/></svg>
+          <div class="hero-aircraft" data-flight-plane aria-hidden="true"><svg viewBox="0 0 36 36" fill="none"><path d="m18 3 4.2 12.2 9.3 6.2v3.2l-9.3-3.1v7.1l4 2.4v2L18 31l-8.2 4v-2l4-2.4v-7.1l-9.3 3.1v-3.2l9.3-6.2L18 3Z" fill="currentColor"/></svg></div>
+          <div class="hero-compass" data-float-icon aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="21" stroke="currentColor" stroke-opacity=".5"/><circle cx="24" cy="24" r="16" stroke="currentColor" stroke-opacity=".25"/><path d="m30 17-4.5 10L16 31l4.5-10L30 17Z" fill="currentColor"/><circle cx="24" cy="24" r="2" fill="#fff"/></svg></div>
+          <div class="hero-ticket" data-float-ticket aria-label="Barcelona demo itinerary for four days and two travelers"><div class="ticket-top"><span>ROAMREADY · CITY NOTE</span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 19 19 5M7 5h12v12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ticket-destination">Barcelona<span>Spain · demo trip</span></div><div class="ticket-divider"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="ticket-bottom"><span><strong>04</strong> DAYS</span><span><strong>02</strong> TRAVELERS</span><span class="ticket-mark">€1,800<br><small>CEILING</small></span></div></div>
           <a class="image-credit" href="https://commons.wikimedia.org/wiki/File:Sagrada_Fam%C3%ADlia,_Barcelona.jpg" target="_blank" rel="noreferrer">Photo: Julian Lupyan · CC0</a>
         </article>
 
@@ -83,9 +89,9 @@
               <span class="journey-photo-label">BARCELONA · FOUR-DAY DEMO</span>
               <div class="journey-route" aria-hidden="true"><span></span><i></i><span></span><i></i><span></span></div>
             </div>
-            <div class="journey-note journey-note-plan is-active" data-story-card="0"><span class="journey-note-label">YOUR PLAN</span><strong>Made around your interests</strong><span class="journey-note-line"><i></i>Day-by-day itinerary</span></div>
-            <div class="journey-note journey-note-change" data-story-card="1"><span class="journey-note-label">SIMULATED DISRUPTION</span><strong>A landmark closes</strong><span class="journey-note-line"><i></i>See what changes</span></div>
-            <div class="journey-note journey-note-rescue" data-story-card="2"><span class="journey-note-label">SMART RESCUE</span><strong>Replan with the tradeoffs in view</strong><span class="journey-note-line"><i></i>Compare cost + travel time</span></div>
+            <div class="journey-note journey-note-plan is-active" data-story-card="0"><span class="journey-note-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="12" stroke="currentColor"/><path d="m21 11-3.4 7.1L11 21l3.2-7.1L21 11Z" fill="currentColor"/></svg></span><div><span class="journey-note-label">YOUR PLAN</span><strong>Made around your interests</strong><span class="journey-note-line"><i></i>Day-by-day itinerary</span></div></div>
+            <div class="journey-note journey-note-change" data-story-card="1"><span class="journey-note-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="m16 4 13 23H3L16 4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M16 12v7m0 3v.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><div><span class="journey-note-label">SIMULATED DISRUPTION</span><strong>A landmark closes</strong><span class="journey-note-line"><i></i>See what changes</span></div></div>
+            <div class="journey-note journey-note-rescue" data-story-card="2"><span class="journey-note-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M25 13a9.5 9.5 0 0 0-16.3-5L6 11m0 0V5m0 6h6m-5 8a9.5 9.5 0 0 0 16.3 5L26 21m0 0v6m0-6h-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><span class="journey-note-label">SMART RESCUE</span><strong>Replan with the tradeoffs in view</strong><span class="journey-note-line"><i></i>Compare cost + travel time</span></div></div>
             <div class="journey-stage-caption"><span class="stage-caption-dot"></span> Scroll story preview <span>·</span> actual estimates appear in Smart Rescue</div>
           </div>
         </section>
@@ -176,6 +182,7 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/MotionPathPlugin.min.js" defer></script>
   <script src="/static/app.js" defer></script>
 </body>
 </html>

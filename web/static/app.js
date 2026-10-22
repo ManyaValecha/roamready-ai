@@ -12,8 +12,18 @@
     const story = $('.journey-story');
     const gsap = window.gsap;
     const trigger = window.ScrollTrigger;
-    if (!story || !gsap || !trigger || matchMedia('(prefers-reduced-motion: reduce)').matches || matchMedia('(max-width: 780px)').matches) return;
+    if (!story || !gsap || !trigger || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     gsap.registerPlugin(trigger);
+    if (window.MotionPathPlugin) gsap.registerPlugin(window.MotionPathPlugin);
+    gsap.fromTo('.destination-copy > *', {y:22, autoAlpha:0}, {y:0, autoAlpha:1, duration:.85, stagger:.12, ease:'power3.out', clearProps:'transform'});
+    gsap.to('[data-float-ticket]', {y:-13, rotateZ:-1.2, duration:2.8, repeat:-1, yoyo:true, ease:'sine.inOut'});
+    gsap.to('[data-float-icon]', {y:-9, rotateZ:8, duration:3.4, repeat:-1, yoyo:true, ease:'sine.inOut'});
+    if (window.MotionPathPlugin) {
+      const path = $('.hero-flight-path path');
+      const plane = $('[data-flight-plane]');
+      if (path && plane) gsap.to(plane, {duration:10, repeat:-1, ease:'none', motionPath:{path, align:'.hero-flight-path', autoRotate:true, alignOrigin:[.5,.5]}});
+    }
+    if (matchMedia('(max-width: 780px)').matches) return;
     const photo = $('[data-story-photo]');
     const cards = $$('[data-story-card]', story);
     const steps = $$('[data-story-step]', story);
@@ -36,7 +46,14 @@
       .to(cards[1], {autoAlpha:1, x:0, rotateY:0, scale:1, ease:'none'}, .31)
       .to(cards[1], {autoAlpha:0, x:25, rotateY:9, scale:.96, ease:'none'}, .61)
       .to(cards[2], {autoAlpha:1, x:0, rotateY:0, scale:1, ease:'none'}, .63);
-    gsap.fromTo('.destination-copy > *', {y:16, autoAlpha:0}, {y:0, autoAlpha:1, duration:.72, stagger:.08, ease:'power2.out', clearProps:'transform'});
+  }
+
+  function animatePageEntrance(page) {
+    const gsap = window.gsap;
+    const section = $(`#page-${page}`);
+    if (!gsap || !section || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const items = $$('.page-intro,.panel,.disruption-banner,.rescue-controls,.snapshot-card,.destination-hero,.journey-story,.rescue-preview,.trip-card,.help-card', section);
+    if (items.length) gsap.fromTo(items, {autoAlpha:0,y:20,rotateX:2,transformPerspective:1100}, {autoAlpha:1,y:0,rotateX:0,duration:.54,stagger:.045,ease:'power3.out',clearProps:'transform'});
   }
 
   function toast(message, error = false) {
@@ -57,6 +74,7 @@
     if (!names[page]) return;
     $$('.page-section').forEach(x => { x.hidden = x.id !== `page-${page}`; x.classList.toggle('active', !x.hidden); });
     $$('[data-page]').forEach(x => x.classList.toggle('active', x.dataset.page === page));
+    animatePageEntrance(page);
     $('#page-title').textContent = names[page];
     if (page === 'trips') return loadTrips();
     if (page === 'preferences') return loadProfile();
