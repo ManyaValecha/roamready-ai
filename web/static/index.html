@@ -26,7 +26,7 @@
         <button type="button" class="nav-link" data-page="help"><span class="nav-glyph" aria-hidden="true">?</span>Demo & help</button>
       </nav>
       <div class="sidebar-spacer"></div>
-      <div class="demo-status"><span class="status-dot"></span><div><strong>Local demo mode</strong><small>Simulated estimates · no bookings</small></div></div>
+      <div class="demo-status"><span class="status-dot"></span><div><strong id="demo-status-title">Demo mode</strong><small>Simulated estimates · no bookings</small></div></div>
       <div class="profile-mini"><span class="avatar">RR</span><div><strong>Your travel profile</strong><small id="profile-mini-label">Preferences load from SQLite</small></div></div>
     </aside>
 
@@ -43,6 +43,7 @@
         <div class="breadcrumbs"><span>Workspace</span><span aria-hidden="true">/</span><strong id="page-title">Overview</strong></div>
         <div class="topbar-actions"><span class="demo-pill"><i></i>DEMO MODE</span><button type="button" class="icon-button" id="refresh-dashboard" aria-label="Refresh dashboard" title="Refresh dashboard">↻</button></div>
       </header>
+      <aside id="hosting-notice" class="hosting-notice" role="status" hidden>Hosted demo: saved preferences and trips use temporary storage and may be cleared when the server restarts.</aside>
 
       <section class="page-section active" id="page-overview" aria-labelledby="overview-title">
         <div class="welcome-row">
@@ -65,7 +66,7 @@
         <div class="snapshot-grid">
           <article class="snapshot-card"><div class="snapshot-label">SAVED TRIPS</div><strong id="overview-trip-count">—</strong><span id="overview-trip-caption">Loading from your travel profile</span></article>
           <article class="snapshot-card"><div class="snapshot-label">CURRENT PLAN</div><strong id="overview-plan-total">No active plan</strong><span id="overview-plan-caption">Start a plan to see its estimate</span></article>
-          <article class="snapshot-card"><div class="snapshot-label">YOUR PREFERENCES</div><strong id="overview-interest-count">—</strong><span id="overview-preference-caption">Stored in your local SQLite profile</span></article>
+          <article class="snapshot-card"><div class="snapshot-label">YOUR PREFERENCES</div><strong id="overview-interest-count">—</strong><span id="overview-preference-caption">Stored in your travel profile</span></article>
         </div>
 
         <div class="section-heading rescue-heading"><div><div class="eyebrow">WHEN THE DAY CHANGES</div><h2>Plans change. Your trip can, too.</h2></div></div>
@@ -136,7 +137,7 @@
       <section class="page-section" id="page-help" aria-labelledby="help-title" hidden>
         <div class="page-intro"><div class="eyebrow">A FEW THINGS TO KNOW</div><h1 id="help-title">Demo & help</h1><p>RoamReady is a local travel planning demo that uses MCP tools for planning and recovery.</p></div>
         <div class="help-grid"><article class="panel help-card"><div class="eyebrow">DEMO MODE</div><h2>What’s simulated?</h2><p>Barcelona attraction availability, opening hours, ticket costs, lodging, meals, airfare and local travel times are illustrative. Provider outage and landmark closure are simulated scenarios.</p><p>No booking, payment, current quote or live disruption feed is connected.</p></article>
-          <article class="panel help-card"><div class="eyebrow">MCP CONNECTION</div><h2>Local tools, real calls.</h2><p>The web dashboard sends planning, saved-trip, profile and rescue requests through the local Streamable HTTP MCP server. The app does not connect to an Alexa device or restricted Alexa+ preview tools.</p><code>http://127.0.0.1:8765/mcp</code></article>
+          <article class="panel help-card"><div class="eyebrow">MCP CONNECTION</div><h2>Planning through MCP.</h2><p>The dashboard sends planning, saved-trip, profile and rescue requests through the Streamable HTTP MCP server. The app does not connect to an Alexa device or restricted Alexa+ preview tools.</p><code id="mcp-endpoint">http://127.0.0.1:8765/mcp</code></article>
           <article class="panel help-card"><div class="eyebrow">SESSION CONTROLS</div><h2>Reset the demo session</h2><p>Clear the current conversation and generated comparison. Saved trips and preferences remain in your local profile.</p><button type="button" id="reset-demo" class="button button-secondary">Reset demo session</button></article>
           <article class="panel help-card help-danger"><div class="eyebrow">DATA CONTROLS</div><h2>Clear your travel memory</h2><p>Delete your saved profile, saved trips and price watches from this demo’s SQLite database. This cannot be undone.</p><button type="button" id="forget-all" class="button button-danger">Forget all travel memory</button></article></div>
       </section>

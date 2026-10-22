@@ -40,7 +40,8 @@ security = TransportSecuritySettings(
     allowed_hosts=os.environ.get("TRIP_SCOUT_ALLOWED_HOSTS", f"127.0.0.1:{PORT},localhost:{PORT}").split(","),
     allowed_origins=os.environ.get("TRIP_SCOUT_ALLOWED_ORIGINS", f"http://127.0.0.1:{PORT},http://localhost:{PORT},http://127.0.0.1:8770,http://localhost:8770").split(","),
 )
-mcp = FastMCP("roamready-ai", instructions=INSTRUCTIONS, host=HOST, port=PORT, transport_security=security)
+mcp = FastMCP("roamready-ai", instructions=INSTRUCTIONS, host=HOST, port=PORT, transport_security=security,
+              stateless_http=os.environ.get("TRIP_SCOUT_STATELESS_HTTP") == "1")
 
 
 # ------------------------------------------------------------------ helpers

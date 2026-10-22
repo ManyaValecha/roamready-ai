@@ -112,7 +112,7 @@ The project preserves Trip Scout's MIT license in [LICENSE](LICENSE). RoamReady 
 
 ## Deployment
 
-Public hosting is optional under the current Alexa+ FAQ. No hosting account or credentials were available, so this project is not publicly deployed. For a deployment guide and its two-service configuration, see [the audit and submission notes](docs/FINAL_AUDIT.md) and [SUBMISSION.md](SUBMISSION.md). Do not expose a local demo server to the public internet without configuring authentication, host/origin allow-lists, persistent storage and HTTPS.
+The Vercel entry point is a demo-only, single-function ASGI deployment. It keeps simulated planning and rescue enabled, requires a private bearer token for MCP HTTP requests, signs browser session IDs, and blocks live-provider tools in the web proxy. SQLite uses `/tmp`, which Vercel may clear between instances or restarts; saved trips and preferences are temporary. No database or other paid resource is provisioned. See [docs/VERCEL.md](docs/VERCEL.md) for setup. A successful local build is not a public deployment; add the deployed URL only after verifying it.
 
 ## Submission/demo materials
 

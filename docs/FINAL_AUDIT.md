@@ -1,5 +1,13 @@
 # Competition readiness audit — 22 October 2026
 
+## Hosted adapter verification
+
+- Added a Vercel Python ASGI entry point that serves the dashboard and real Streamable HTTP MCP server together. The hosted app requires `TRIP_SCOUT_TOKEN` and `ROAMREADY_SESSION_SECRET`, forces deterministic demo mode, uses temporary `/tmp` SQLite, signs per-browser sessions, and restricts web-proxy MCP calls to offline tools.
+- Local composite-server verification used a real Uvicorn process on `127.0.0.1:8891` and an independent MCP client. `initialize` negotiated `2025-11-25`; `tools/list` returned 19 tools; `plan_demo_trip` returned structured `demo-trip` data totaling €1,712 under the €1,800 cap; `rescue_demo_trip_tool` returned `demo-rescue` with a −€74 estimated-cost delta. Unauthenticated MCP returned HTTP 401; malformed JSON returned HTTP 406.
+- Session verification used the app's actual HTTP routes and MCP backend: the signed cookie retained a saved preference for the same browser, a fresh browser received a separate profile, and a forged client `user_id` did not override session identity. The web proxy rejected `search_flights` with HTTP 403.
+- Commands: `/private/tmp/roamready-comp-venv/bin/python -m pytest -q tests/test_units.py tests/test_roamready_mcp.py tests/test_web_reset.py` → 19 passed; `/private/tmp/roamready-comp-venv/bin/python -m compileall -q app.py trip_scout web`; `node --check web/static/app.js`; `git diff --check`.
+- No remote GitHub repository or Vercel deployment was created. The saved GitHub CLI and Vercel CLI tokens are invalid. Reauthentication is required before the authorized public push and deployment. The Vercel deployment files have not been verified by `vercel build` or a public deployment.
+
 ## Scope
 
 Inspected source and docs rather than relying on the prior audit: `README.md`, `FEATURE_MATRIX.md`, `DEMO.md`, `SUBMISSION.md`, `.env.example`, `.gitignore`, `requirements.txt`, `run_demo.py`, both pytest modules, MCP implementation/client, browser simulator, reset flow, and `trip_scout/engines/flights.py` / `hotels.py`. Rechecked the current [official rules](https://amazonappdev2026.devpost.com/rules) and [FAQ](https://amazonappdev2026.devpost.com/details/faqs).

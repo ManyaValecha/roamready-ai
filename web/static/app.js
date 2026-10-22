@@ -5,7 +5,7 @@
   const $$ = (q, root = document) => [...root.querySelectorAll(q)];
   const sessionKey = 'roamready_session';
   let sessionId = sessionStorage.getItem(sessionKey) || '';
-  let profile = null, savedTrips = [], activePlan = null, activeRescue = null, viewHtml = '';
+  let profile = null, savedTrips = [], activePlan = null, activeRescue = null, viewHtml = '', hostedDemo = false;
   const frames = new Map();
 
   function toast(message, error = false) {
@@ -73,7 +73,7 @@
       $('#pref-budget').value = profile.tripBudgetEUR ?? 1800;
       $$('input[name="pref-interest"]').forEach(x => x.checked = (profile.interests || []).includes(x.value));
       $('#pref-step-free').checked = !!profile.stepFreeAccess;
-      $('#preferences-source').textContent = 'Saved in local SQLite';
+      $('#preferences-source').textContent = hostedDemo ? 'Saved in temporary hosted storage' : 'Saved in local SQLite';
       $('#profile-mini-label').textContent = `${(profile.interests || []).length} interests · €${profile.tripBudgetEUR ?? 1800} default`;
     } catch (err) { $('#preferences-source').textContent = 'Could not load profile'; toast(`Profile unavailable: ${err.message}`, true); }
   }
@@ -86,7 +86,7 @@
   }
   function renderTrips() {
     const grid = $('#trips-grid'); $('#trip-count').textContent = String(savedTrips.length); $('#overview-trip-count').textContent = String(savedTrips.length);
-    $('#overview-trip-caption').textContent = savedTrips.length ? 'Stored in your local travel profile' : 'No trips saved yet';
+    $('#overview-trip-caption').textContent = savedTrips.length ? (hostedDemo ? 'Stored in temporary hosted travel memory' : 'Stored in your local travel profile') : 'No trips saved yet';
     if (!savedTrips.length) { grid.innerHTML = '<article class="empty-card"><div class="eyebrow">A PLACE FOR YOUR PLANS</div><h2>Your next trip starts here.</h2><p>Build a Barcelona itinerary and save it to your local travel profile. Saved plans come from the backend; this list is never prefilled.</p><button class="button button-primary" data-page="planner" type="button">Plan your first trip →</button></article>'; return; }
     grid.innerHTML = savedTrips.map((trip,i) => {
       const data = trip.data || {}, title = escapeHtml(trip.label || data.destination || 'Saved trip');
@@ -167,8 +167,18 @@
   $('#planner-form').addEventListener('submit',e=>{e.preventDefault();showError('#planner-error','');runChat(planText(),'plan');});
   $('#run-rescue').addEventListener('click',()=>{showError('#rescue-error','');runChat('The Sagrada Família is closed; replan my Barcelona itinerary around the disruption.','rescue');});
   $('#run-provider-failure').addEventListener('click',()=>{showError('#rescue-error','');runChat('Simulate a flight provider failure and recover offline.','rescue');});
-  $('#preferences-form').addEventListener('submit',async e=>{e.preventDefault();const button=e.submitter, interests=$$('input[name="pref-interest"]:checked').map(x=>x.value);if(!interests.length){$('#preferences-message').textContent='Choose at least one interest.';$('#preferences-message').hidden=false;return;}button.disabled=true;try{const args={trip_budget_eur:Number($('#pref-budget').value),interests,step_free_access:$('#pref-step-free').checked};const r=await mcp('set_travel_profile',args);if(r.isError)throw new Error(content(r).speech||'Could not save preferences');profile=content(r).profile||args;$('#preferences-message').textContent='Preferences saved and will be used by the planner.';$('#preferences-message').hidden=false;$('#preferences-source').textContent='Saved in local SQLite';await loadDashboard();toast('Preferences saved.');}catch(err){$('#preferences-message').textContent=err.message;$('#preferences-message').hidden=false;}finally{button.disabled=false;}});
+  $('#preferences-form').addEventListener('submit',async e=>{e.preventDefault();const button=e.submitter, interests=$$('input[name="pref-interest"]:checked').map(x=>x.value);if(!interests.length){$('#preferences-message').textContent='Choose at least one interest.';$('#preferences-message').hidden=false;return;}button.disabled=true;try{const args={trip_budget_eur:Number($('#pref-budget').value),interests,step_free_access:$('#pref-step-free').checked};const r=await mcp('set_travel_profile',args);if(r.isError)throw new Error(content(r).speech||'Could not save preferences');profile=content(r).profile||args;$('#preferences-message').textContent='Preferences saved and will be used by the planner.';$('#preferences-message').hidden=false;$('#preferences-source').textContent=hostedDemo?'Saved in temporary hosted storage':'Saved in local SQLite';await loadDashboard();toast('Preferences saved.');}catch(err){$('#preferences-message').textContent=err.message;$('#preferences-message').hidden=false;}finally{button.disabled=false;}});
   // Support keyboard activation and refresh all real backend snapshots on entry.
   $('#welcome-date').textContent = new Intl.DateTimeFormat(undefined,{weekday:'long',month:'long',day:'numeric'}).format(new Date()).toUpperCase();
-  loadView().then(loadDashboard).catch(err=>toast(`MCP server unavailable: ${err.message}`,true));
+  request('/api/config',null).then(config=>{
+    hostedDemo=!!config.hosted;
+    if(hostedDemo){
+      $('#demo-status-title').textContent='Hosted demo mode';$('#hosting-notice').hidden=false;
+      $('#mcp-endpoint').textContent=`${location.origin}/mcp`;
+      $('#page-help .page-intro p').textContent='RoamReady is a hosted travel planning demo that uses MCP tools for planning and recovery.';
+      $('#page-help .help-danger p').textContent='Delete your saved profile, trips and price watches from this demo’s temporary storage. This cannot be undone.';
+      $('#page-help .help-card:nth-child(3) p').textContent='Clear the current conversation and generated comparison. Saved trips and preferences remain in temporary hosted storage.';
+    }
+    return loadView();
+  }).then(loadDashboard).catch(err=>toast(`MCP server unavailable: ${err.message}`,true));
 })();

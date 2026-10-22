@@ -13,7 +13,10 @@ If the LLM is unreachable, a small rule-based intent router keeps the demo worki
 Run:  python -m web.app   ->  http://127.0.0.1:8770
 """
 import asyncio
+import base64
 import datetime as dt
+import hashlib
+import hmac
 import json
 import os
 import re
@@ -38,6 +41,13 @@ LLM_KEY = os.environ.get("LLM_API_KEY", "")
 LLM_MODEL = os.environ.get("LLM_MODEL", "openai")
 MCP_TOKEN = os.environ.get("TRIP_SCOUT_TOKEN", "")
 PORT = int(os.environ.get("SIM_PORT", os.environ.get("PORT", "8770")))
+VERCEL_DEMO = os.environ.get("ROAMREADY_DEPLOYMENT_MODE") == "vercel"
+DEMO_SAFE_TOOLS = {
+    "plan_demo_trip", "rescue_demo_trip_tool", "simulate_provider_failure",
+    "plan_local_itinerary", "rescue_itinerary_tool", "set_travel_profile",
+    "get_travel_profile", "forget_travel_memory", "list_saved_trips",
+    "save_demo_trip_tool", "delete_saved_trip_tool",
+}
 
 with open(os.path.join(ROOT, "skills", "trip-scout", "SKILL.md"), encoding="utf-8") as f:
     SKILL = f.read().split("---", 2)[-1].strip()   # body of the Agent Skill (frontmatter stripped)
@@ -241,24 +251,41 @@ async def index(request):
 
 
 async def app_view(request: Request):
-    uid = (request.headers.get("x-user-id") or "demo-user")[:64]
+    uid = request_user_id(request)
     async def go(s):
         return (await s.read_resource("ui://roamready-ai/view.html")).contents[0].text
     return JSONResponse({"html": await mcp_call(uid, go)})
 
 
+def request_user_id(request: Request, body=None):
+    if VERCEL_DEMO:
+        uid = request.session.get("user_id")
+        if not uid:
+            uid = uuid.uuid4().hex
+            request.session["user_id"] = uid
+        return uid
+    return ((body or {}).get("user_id") or request.headers.get("x-user-id") or "demo-user")[:64]
+
+
+async def config(request: Request):
+    return JSONResponse({"hosted": VERCEL_DEMO, "temporaryStorage": VERCEL_DEMO})
+
+
 async def chat(request: Request):
     body = await request.json()
-    sid = body.get("session_id") or uuid.uuid4().hex
-    uid = (body.get("user_id") or "demo-user")[:64]
+    client_sid = body.get("session_id") or uuid.uuid4().hex
+    uid = request_user_id(request, body)
+    sid = f"{uid}:{client_sid}" if VERCEL_DEMO else client_sid
     out = await run_turn(sid, uid, (body.get("text") or "").strip()[:500])
-    out["session_id"] = sid
+    out["session_id"] = client_sid
     return JSONResponse(out)
 
 
 async def reset(request: Request):
     body = await request.json()
-    sid = body.get("session_id")
+    client_sid = body.get("session_id")
+    uid = request_user_id(request, body)
+    sid = f"{uid}:{client_sid}" if VERCEL_DEMO and client_sid else client_sid
     if sid:
         SESSIONS.pop(sid, None); LAST.pop(sid, None); DEMO_TRIPS.pop(sid, None)
     # Reset the conversation only. Persistent profile, saved trips and watches
@@ -269,13 +296,67 @@ async def reset(request: Request):
 async def tool(request: Request):
     """MCP Apps: the view (iframe) asks the host to proxy tools/call to the MCP server."""
     body = await request.json()
-    uid = (body.get("user_id") or "demo-user")[:64]
-    res = await mcp_call(uid, lambda s: s.call_tool(body["name"], body.get("arguments") or {}))
+    name = body.get("name")
+    if DEMO_MODE and name not in DEMO_SAFE_TOOLS:
+        return JSONResponse({"error": "That tool is disabled in the no-live-provider demo."}, status_code=403)
+    uid = request_user_id(request, body)
+    res = await mcp_call(uid, lambda s: s.call_tool(name, body.get("arguments") or {}))
     return JSONResponse(res.model_dump(mode="json", exclude_none=True))
 
 
-app = Starlette(routes=[Route("/", index), Route("/api/view", app_view), Route("/api/chat", chat, methods=["POST"]), Route("/api/tool", tool, methods=["POST"]), Route("/api/reset", reset, methods=["POST"])])
+app = Starlette(routes=[Route("/", index), Route("/api/config", config), Route("/api/view", app_view), Route("/api/chat", chat, methods=["POST"]), Route("/api/tool", tool, methods=["POST"]), Route("/api/reset", reset, methods=["POST"])])
 app.mount("/static", StaticFiles(directory=os.path.join(HERE, "static")), name="static")
+if VERCEL_DEMO:
+    session_secret = os.environ.get("ROAMREADY_SESSION_SECRET")
+    if not session_secret:
+        raise RuntimeError("ROAMREADY_SESSION_SECRET is required for the hosted demo.")
+
+    class SignedDemoSessionMiddleware:
+        """Give each hosted browser a tamper-resistant demo namespace without a third-party session store."""
+        def __init__(self, inner, secret):
+            self.inner = inner
+            self.secret = secret.encode("utf-8")
+
+        def _decode(self, cookie):
+            try:
+                encoded, supplied = cookie.rsplit(".", 1)
+                expected = hmac.new(self.secret, encoded.encode("ascii"), hashlib.sha256).hexdigest()
+                if not hmac.compare_digest(supplied, expected):
+                    return {}
+                raw = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)).decode("utf-8")
+                uid, timestamp = raw.rsplit(".", 1)
+                if time.time() - int(timestamp) > 60 * 60 * 24 * 30:
+                    return {}
+                return {"user_id": uid}
+            except (ValueError, UnicodeError, TypeError):
+                return {}
+
+        def _encode(self, uid):
+            raw = f"{uid}.{int(time.time())}".encode("utf-8")
+            encoded = base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
+            sig = hmac.new(self.secret, encoded.encode("ascii"), hashlib.sha256).hexdigest()
+            return f"{encoded}.{sig}"
+
+        async def __call__(self, scope, receive, send):
+            if scope["type"] != "http":
+                return await self.inner(scope, receive, send)
+            from http.cookies import SimpleCookie
+            jar = SimpleCookie()
+            jar.load(dict(scope.get("headers", [])).get(b"cookie", b"").decode("latin-1"))
+            morsel = jar.get("roamready_session")
+            session = self._decode(morsel.value) if morsel else {}
+            scope["session"] = session
+
+            async def send_with_cookie(message):
+                if message["type"] == "http.response.start" and session.get("user_id"):
+                    headers = list(message.get("headers", []))
+                    headers.append((b"set-cookie", f"roamready_session={self._encode(session['user_id'])}; Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax".encode("ascii")))
+                    message["headers"] = headers
+                await send(message)
+
+            await self.inner(scope, receive, send_with_cookie)
+
+    app = SignedDemoSessionMiddleware(app, session_secret)
 
 if __name__ == "__main__":
     import uvicorn
