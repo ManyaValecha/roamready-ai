@@ -136,13 +136,16 @@
   function renderTrips() {
     const grid = $('#trips-grid'); $('#trip-count').textContent = String(savedTrips.length); $('#overview-trip-count').textContent = String(savedTrips.length);
     $('#overview-trip-caption').textContent = savedTrips.length ? (hostedDemo ? 'Stored in temporary hosted travel memory' : 'Stored in your local travel profile') : 'No trips saved yet';
-    if (!savedTrips.length) { grid.innerHTML = '<article class="empty-card"><div class="eyebrow">A PLACE FOR YOUR PLANS</div><h2>Your next trip starts here.</h2><p>Build a Barcelona itinerary and save it to your local travel profile. Saved plans come from the backend; this list is never prefilled.</p><button class="button button-primary" data-page="planner" type="button">Plan your first trip →</button></article>'; return; }
+    if (!savedTrips.length) { grid.innerHTML = '<article class="empty-card"><div class="empty-art" aria-hidden="true"><span class="empty-orbit"></span><svg viewBox="0 0 112 112" fill="none"><path d="M39 43V32a17 17 0 0 1 34 0v11M27 43h58l-5 48H32l-5-48Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M45 58c0 7 5 12 11 12s11-5 11-12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div><div class="eyebrow">A PLACE FOR YOUR PLANS</div><h2>Your next trip starts here.</h2><p>Build a Barcelona itinerary and save it to your travel profile. Saved plans come from your profile; this list is never prefilled.</p><button class="button button-primary" data-page="planner" type="button">Plan your first trip <span aria-hidden="true">→</span></button></article>'; return; }
     grid.innerHTML = savedTrips.map((trip,i) => {
       const data = trip.data || {}, title = escapeHtml(trip.label || data.destination || 'Saved trip');
       const isDemo = data.kind === 'demo-trip';
       const days = isDemo ? `${data.days || data.itinerary?.length || '—'} days` : 'Saved search';
       const cost = isDemo ? euro(data.estimatedTotal) : 'Estimate details';
-      return `<article class="trip-card"><div class="trip-card-top"><span class="trip-tag">${isDemo?'DEMO ITINERARY':'SAVED TRIP'}</span><button class="icon-button delete-trip" type="button" data-id="${escapeAttr(trip.id)}" aria-label="Delete ${title}" title="Delete trip">×</button></div><h2>${title}</h2><p>${days} · ${cost}</p><div class="trip-card-actions">${isDemo?`<button type="button" class="button button-secondary open-trip" data-index="${i}">Open itinerary</button>`:'<span class="small-status">Saved search record · itinerary view unavailable</span>'}</div></article>`;
+      const art = isDemo
+        ? '<img src="/static/barcelona-sagrada.jpg" alt="" loading="lazy"><span class="trip-art-caption">BARCELONA <i>·</i> YOUR DEMO ITINERARY</span>'
+        : '<div class="trip-record-icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><circle cx="22" cy="22" r="13" stroke="currentColor" stroke-width="1.6"/><path d="m32 32 9 9M22 15v14m-7-7h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div><span class="trip-art-caption">SAVED TRAVEL RECORD</span>';
+      return `<article class="trip-card ${isDemo?'trip-card-demo':''}"><div class="trip-card-art">${art}<button class="icon-button delete-trip" type="button" data-id="${escapeAttr(trip.id)}" aria-label="Delete ${title}" title="Delete trip">×</button></div><div class="trip-card-content"><span class="trip-tag">${isDemo?'DEMO ITINERARY':'SAVED TRIP'}</span><h2>${title}</h2><p>${days} <span aria-hidden="true">·</span> ${cost}</p><div class="trip-card-actions">${isDemo?`<button type="button" class="button button-secondary open-trip" data-index="${i}">Open itinerary <span aria-hidden="true">→</span></button>`:'<span class="small-status">Saved search record · itinerary view unavailable</span>'}</div></div></article>`;
     }).join('');
   }
   async function loadDashboard() {
@@ -225,6 +228,9 @@
       $('#demo-status-title').textContent='Hosted demo mode';$('#hosting-notice').hidden=false;
       $('#mcp-endpoint').textContent=`${location.origin}/mcp`;
       $('#page-help .page-intro p').textContent='RoamReady is a hosted travel planning demo that uses MCP tools for planning and recovery.';
+      $('#page-trips .page-intro p').textContent='Plans saved to temporary hosted travel memory. Demo estimates only; no bookings are made.';
+      $('#page-preferences .page-intro p').textContent='Saved through the existing MCP profile tool in temporary hosted storage and applied by the demo planner.';
+      $('#page-planner .aside-disclosure p').textContent='This planner uses RoamReady’s MCP server. It does not request flight or hotel provider data.';
       $('#page-help .help-danger p').textContent='Delete your saved profile, trips and price watches from this demo’s temporary storage. This cannot be undone.';
       $('#page-help .help-card:nth-child(3) p').textContent='Clear the current conversation and generated comparison. Saved trips and preferences remain in temporary hosted storage.';
     }
