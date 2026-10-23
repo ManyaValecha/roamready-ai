@@ -13,6 +13,8 @@ RoamReady AI helps travelers create budget-aware, interest-led itineraries—and
 [Features](#-what-roamready-ai-does) · [Demo walkthrough](#-demo-walkthrough) · [Architecture](#-how-it-works) · [Run locally](#-run-locally) · [MCP tools](#-mcp-tools) · [Testing](#-testing-and-verification) · [Limitations](#-known-limitations)
 
 ---
+<img width="1336" height="932" alt="Screenshot 2026-10-23 at 11 53 11 AM" src="https://github.com/user-attachments/assets/10535fa8-4c67-48e7-9a63-c6c51ef7923b" />
+<img width="1669" height="970" alt="Screenshot 2026-10-23 at 11 52 49 AM" src="https://github.com/user-attachments/assets/c5f3e974-c084-44a8-8f9e-d4349d1339b8" />
 
 ## 🌍 The idea in one minute
 
