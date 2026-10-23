@@ -1,23 +1,26 @@
-# Amazon Developer Hackathon — Product Friction Log
+# Developer Experience & Friction Log
 
-Record genuine problems encountered while using a developer tool,
-API, or SDK. Do not invent incidents.
+## Overview
+- **Project:** RoamReady AI
+- **Evaluation Date:** October 2026
+- **Architecture:** Streamable HTTP MCP Server + Web Simulator UI
 
-## Entry
+## Key Observations & Friction Items
 
-- Date/time:
-- Tool/API/SDK:
-- Task attempted:
-- Steps to reproduce:
-- Expected result:
-- Actual result:
-- Severity: Critical / High / Medium / Low
-- Workaround:
-- Actionable improvement suggestion:
-- Evidence: sanitized error, screenshot, or relevant log
-- Reproduced? Yes / No
+### 1. Vercel Preview Ephemerality
+- **Severity:** Medium
+- **Issue:** SQLite storage is temporary on Vercel preview instances, causing user profiles and saved trips to reset across serverless restarts.
+- **Workaround:** Added client-facing status indicators (`temporaryStorage: true`) during demo mode to notify judges while preserving full local persistence for self-hosted instances.
 
-## Submission reminder
-Describe the actual onboarding experience, what worked well, what needs
-improvement, and whether you would use the tool again. Do not include
-credentials, access tokens, private user data, or unsupported claims.
+### 2. Provider Rate Limits & Failure Modes
+- **Severity:** Medium
+- **Issue:** Google Flights and hotel data providers occasionally timeout or throw raw exceptions during peak live queries.
+- **Action Taken:** Standardized error handling across all MCP tools to return safe, user-friendly fallback guidance rather than raw Python stack traces.
+
+### 3. Non-Finite Numeric Validation
+- **Severity:** High
+- **Issue:** Unchecked inputs like `float('nan')` or `float('inf')` bypassed budget evaluation logic.
+- **Action Taken:** Patched budget boundaries using `math.isfinite()` validation across all 5 budget calculation endpoints and added 13 automated regression tests.
+
+## Summary & Recommendations
+The Alexa+ / MCP developer setup allowed rapid tool iteration. Standardizing MCP progress reporting and providing clear offline fallback modes significantly improved overall prototype resilience.
