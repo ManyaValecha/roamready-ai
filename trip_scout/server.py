@@ -67,7 +67,7 @@ def _error(speech):
 @mcp.tool(title="Build a constraint-aware day plan", meta=UI_META, annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=False))
 async def plan_local_itinerary(ctx: Context, days: int = 3, activity_budget: float = 120, interests: list[str] | None = None, step_free_access: bool = False) -> CallToolResult:
     """Create an illustrative Barcelona itinerary, balancing interests, activity budget, opening windows, travel time and step-free access. Demo catalog only."""
-    if days < 1 or days > 7 or activity_budget < 0 or activity_budget > 100000:
+    if days < 1 or days > 7 or not math.isfinite(activity_budget) or activity_budget < 0 or activity_budget > 100000:
         return _error("Choose 1–7 days and a non-negative activity budget.")
     data = build_itinerary(days, activity_budget, interests, step_free_access)
     return _result(f"I planned {days} days in Barcelona with estimated activities at ${data['estimatedActivityCost']:.0f}, leaving ${data['remainingBudget']:.0f} in the activity budget. These are illustrative estimates.", {"kind":"itinerary", **data})
@@ -81,7 +81,7 @@ async def plan_demo_trip(ctx: Context, days: int = 4, travelers: int = 2, trip_b
     trip_budget_eur = profile.get("tripBudgetEUR", 1800) if trip_budget_eur is None else trip_budget_eur
     interests = profile.get("interests") if interests is None else interests
     step_free_access = profile.get("stepFreeAccess", False) if step_free_access is None else step_free_access
-    if days < 1 or days > 7 or travelers < 1 or travelers > 8 or trip_budget_eur < 0 or trip_budget_eur > 100000:
+    if days < 1 or days > 7 or travelers < 1 or travelers > 8 or not math.isfinite(trip_budget_eur) or trip_budget_eur < 0 or trip_budget_eur > 100000:
         return _error("Choose 1–7 days, 1–8 travelers and a non-negative EUR trip budget.")
     data = build_demo_trip(days, trip_budget_eur, travelers, interests, accessible=step_free_access)
     return _result(f"I built a {days}-day Barcelona estimate for {travelers} travelers: €{data['estimatedTotal']:.0f} of the €{trip_budget_eur:.0f} budget. This entire demo cost breakdown is simulated, not a live quote.", data)
@@ -92,7 +92,7 @@ async def rescue_demo_trip_tool(ctx: Context, days: int = 4, travelers: int = 2,
                                interests: list[str] | None = None, disruption: str = "Sagrada Família closure",
                                step_free_access: bool | None = None) -> CallToolResult:
     """Show before/after Barcelona itineraries and transparent estimated cost/time deltas after a simulated closure or weather disruption."""
-    if days < 1 or days > 7 or travelers < 1 or travelers > 8 or trip_budget_eur < 0 or trip_budget_eur > 100000:
+    if days < 1 or days > 7 or travelers < 1 or travelers > 8 or not math.isfinite(trip_budget_eur) or trip_budget_eur < 0 or trip_budget_eur > 100000:
         return _error("Choose 1–7 days, 1–8 travelers and a non-negative EUR trip budget.")
     profile = store.get_profile(_user(ctx))
     interests = profile.get("interests") if interests is None else interests
@@ -112,7 +112,7 @@ async def rescue_demo_trip_tool(ctx: Context, days: int = 4, travelers: int = 2,
 async def simulate_provider_failure(ctx: Context, days: int = 4, travelers: int = 2, trip_budget_eur: float = 1800,
                                     interests: list[str] | None = None, step_free_access: bool = False) -> CallToolResult:
     """Inject a local simulated provider 503, then recover with the offline demo planner. Makes no network requests; all returned costs are simulated."""
-    if days < 1 or days > 7 or travelers < 1 or travelers > 8 or trip_budget_eur < 0 or trip_budget_eur > 100000:
+    if days < 1 or days > 7 or travelers < 1 or travelers > 8 or not math.isfinite(trip_budget_eur) or trip_budget_eur < 0 or trip_budget_eur > 100000:
         return _error("Choose 1–7 days, 1–8 travelers and a non-negative EUR trip budget.")
     try:
         raise RuntimeError("Injected simulated 503 provider outage")
@@ -125,7 +125,7 @@ async def simulate_provider_failure(ctx: Context, days: int = 4, travelers: int 
 @mcp.tool(title="Rescue an itinerary from a disruption", meta=UI_META, annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=False))
 async def rescue_itinerary_tool(ctx: Context, days: int = 3, activity_budget: float = 120, interests: list[str] | None = None, step_free_access: bool = False, disruption: str = "Sagrada Família closed") -> CallToolResult:
     """Rebuild a demo Barcelona itinerary after a closure or weather disruption; estimates are simulated, not live alerts."""
-    if days < 1 or days > 7 or activity_budget < 0 or activity_budget > 100000:
+    if days < 1 or days > 7 or not math.isfinite(activity_budget) or activity_budget < 0 or activity_budget > 100000:
         return _error("Choose 1–7 days and a non-negative activity budget.")
     data = rescue_itinerary(days, activity_budget, interests, step_free_access, disruption)
     return _result(f"I replanned for {disruption}. Removed affected stops and rebuilt the schedule. Prices, status and timings in this demo are illustrative.", {"kind":"rescue", **data})
@@ -320,7 +320,7 @@ async def search_flights(ctx: Context, destination: str, departure_date: str, re
     try:
         r = await _run(planner.search_flights, o["code"], d["code"], dep, ret, prof, None, 6, sort_by)
     except Exception as e:
-        return _error(f"Google Flights didn't respond right now ({e}). Please try again in a moment.")
+        return _error("Google Flights is temporarily unavailable. Please try again, or use the clearly labeled offline demo.")
     fl = [_short_flight(f) for f in r["flights"]]
     cur = prof["currency"]
     if not fl:
@@ -375,7 +375,7 @@ async def search_hotels(ctx: Context, city: str, check_in: str, nights: int = 2,
     try:
         hs = await _run(planner.search_hotels, city, ci, nights, prof, None, 60)
     except Exception as e:
-        return _error(f"I couldn't search hotels in {city}: {e}")
+        return _error("The hotel provider is temporarily unavailable. Please try again later.")
     if max_price_per_night:
         hs = [h for h in hs if (h["pricePerNight"] or 1e12) <= max_price_per_night]
     hs = [_short_hotel(h) for h in hs[:8]]
