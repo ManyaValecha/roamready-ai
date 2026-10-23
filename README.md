@@ -1,6 +1,8 @@
 # ✈️ RoamReady AI
 
 ### Plan thoughtfully. Adapt confidently. Keep the journey moving.
+<img width="1336" height="932" alt="Screenshot 2026-10-23 at 11 53 11 AM" src="https://github.com/user-attachments/assets/23c2a0ec-6347-494c-a676-9efa5cacd045" />
+<img width="1669" height="970" alt="Screenshot 2026-10-23 at 11 52 49 AM" src="https://github.com/user-attachments/assets/8c5d5a1c-b3c1-4e4d-bf83-79ace4a23858" />
 
 **An autonomous itinerary planning and rescue agent built for the Amazon Build, Ship, Shape Developer Hackathon — Alexa+ Track.**
 
